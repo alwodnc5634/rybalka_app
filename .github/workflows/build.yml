@@ -7,7 +7,8 @@ on:
   push:
     branches: [ main, master ]
     paths:
-      - "rybalka_app/**"
+      - "backend/**"
+      - "frontend/**"
       - ".github/workflows/build.yml"
 
 jobs:
@@ -16,7 +17,7 @@ jobs:
     runs-on: windows-latest
     defaults:
       run:
-        working-directory: rybalka_app/backend
+        working-directory: backend
     steps:
       - uses: actions/checkout@v4
 
@@ -42,13 +43,13 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: RybalkaLodki-Windows
-          path: rybalka_app/backend/dist/RybalkaLodki-Windows.exe
+          path: backend/dist/RybalkaLodki-Windows.exe
 
   build-macos:
     runs-on: macos-latest
     defaults:
       run:
-        working-directory: rybalka_app/backend
+        working-directory: backend
     steps:
       - uses: actions/checkout@v4
 
@@ -74,4 +75,4 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: RybalkaLodki-Mac
-          path: rybalka_app/backend/dist/RybalkaLodki-Mac
+          path: backend/dist/RybalkaLodki-Mac
