@@ -1,0 +1,77 @@
+name: Build Рыбалка-Лодки
+
+# Запускается вручную (кнопка "Run workflow" на вкладке Actions на GitHub)
+# или автоматически при каждой заливке кода в ветку main.
+on:
+  workflow_dispatch:
+  push:
+    branches: [ main, master ]
+    paths:
+      - "rybalka_app/**"
+      - ".github/workflows/build.yml"
+
+jobs:
+
+  build-windows:
+    runs-on: windows-latest
+    defaults:
+      run:
+        working-directory: rybalka_app/backend
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Установить PyInstaller
+        run: pip install pyinstaller
+
+      - name: Собрать Windows-версию
+        run: >
+          pyinstaller --onefile --name "RybalkaLodki-Windows"
+          --add-data "../frontend;frontend"
+          --add-data "schema_lodki_mvp.sql;."
+          --add-data "schema_forel.sql;."
+          --add-data "schema_zone_weight.sql;."
+          --add-data "schema_registry.sql;."
+          --add-data "evsk_standards.json;."
+          server.py
+
+      - name: Загрузить результат
+        uses: actions/upload-artifact@v4
+        with:
+          name: RybalkaLodki-Windows
+          path: rybalka_app/backend/dist/RybalkaLodki-Windows.exe
+
+  build-macos:
+    runs-on: macos-latest
+    defaults:
+      run:
+        working-directory: rybalka_app/backend
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Установить PyInstaller
+        run: pip3 install pyinstaller
+
+      - name: Собрать Mac-версию
+        run: >
+          pyinstaller --onefile --name "RybalkaLodki-Mac"
+          --add-data "../frontend:frontend"
+          --add-data "schema_lodki_mvp.sql:."
+          --add-data "schema_forel.sql:."
+          --add-data "schema_zone_weight.sql:."
+          --add-data "schema_registry.sql:."
+          --add-data "evsk_standards.json:."
+          server.py
+
+      - name: Загрузить результат
+        uses: actions/upload-artifact@v4
+        with:
+          name: RybalkaLodki-Mac
+          path: rybalka_app/backend/dist/RybalkaLodki-Mac
