@@ -55,7 +55,7 @@ CREATE TABLE IF NOT EXISTS tournament (
     venue           TEXT NOT NULL DEFAULT '',
     date_tour1      TEXT NOT NULL DEFAULT '',
     date_tour2      TEXT NOT NULL DEFAULT '',
-    discipline      TEXT NOT NULL DEFAULT 'Ловля спиннингом с берега (форель)',
+    discipline      TEXT NOT NULL DEFAULT 'Ловля спиннингом с берега',
     gender_group    TEXT NOT NULL DEFAULT '',
     tours_count     INTEGER NOT NULL DEFAULT 2 CHECK (tours_count IN (1,2)),
     periods_count   INTEGER NOT NULL DEFAULT 3 CHECK (periods_count IN (3,4)),
