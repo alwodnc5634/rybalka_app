@@ -87,7 +87,7 @@ PORT = 8642
 # ли уже рабочий модуль регистрации/подсчёта; сейчас только лодки.
 DISCIPLINES = {
     "lodki":     {"name": "Ловля спиннингом с лодок",        "engine": "fish_measurement", "implemented": True},
-    "forel":     {"name": "Ловля спиннингом с берега (форель)", "engine": "zone_length_sum", "implemented": True},
+    "forel":     {"name": "Ловля спиннингом с берега",        "engine": "zone_length_sum", "implemented": True},
     "donka":     {"name": "Ловля донной удочкой",            "engine": "zone_weight",      "implemented": True},
     "poplavok":  {"name": "Ловля поплавочной удочкой",       "engine": "zone_weight",      "implemented": True},
     "blesna":    {"name": "Ловля на блесну со льда",         "engine": "zone_weight",      "implemented": True},
