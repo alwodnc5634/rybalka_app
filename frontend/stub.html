@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<title>Рыбалка — модуль в разработке</title>
+<style>
+  body { font-family: "Segoe UI", Tahoma, sans-serif; margin: 0; background: #f6f8f9; color: #222; }
+  header { background: #1a5f7a; color: white; padding: 14px 24px; display: flex; align-items: center; gap: 24px; }
+  header a { color: white; text-decoration: none; opacity: 0.85; font-size: 13px; }
+  header h1 { font-size: 18px; margin: 0; font-weight: 600; }
+  main { padding: 40px 24px; max-width: 700px; margin: 0 auto; text-align: center; }
+  .card { background: white; border: 1px solid #d0d7dc; border-radius: 10px; padding: 32px; }
+  h2 { color: #1a5f7a; margin-top: 0; }
+  p { color: #555; line-height: 1.6; }
+  #diag { color: #999; font-size: 11px; padding: 8px 24px; text-align: center; }
+</style>
+</head>
+<body>
+<header>
+  <a href="launcher.html">← Турниры</a>
+  <h1>🎣 Рыбалка</h1>
+</header>
+<main>
+  <div class="card">
+    <h2 id="title">Модуль в разработке</h2>
+    <p id="text">Регистрация и подсчёт для этой дисциплины ещё не готовы.
+       Турнир уже создан и сохранён — когда модуль будет готов, все данные
+       будут на месте, ничего заново заводить не придётся.</p>
+    <p><a href="launcher.html">← Вернуться к списку турниров</a></p>
+  </div>
+</main>
+<div id="diag"></div>
+<script>
+(async function () {
+  try {
+    const r = await fetch("/api/launcher/current");
+    const cur = await r.json();
+    if (cur && cur.name_full) {
+      document.getElementById("title").textContent = "«" + cur.name_full + "» — модуль в разработке";
+      document.title = cur.name_full + " — модуль в разработке";
+    }
+    if (cur && cur.discipline_name) {
+      document.getElementById("text").textContent =
+        "Дисциплина «" + cur.discipline_name + "»: регистрация и подсчёт результатов для неё ещё не реализованы " +
+        "(сейчас полностью готов только модуль «Лодки»). Турнир уже создан и сохранён — когда модуль будет готов, " +
+        "все данные будут на месте, ничего заново заводить не придётся.";
+    }
+    const info = await (await fetch("/api/info")).json();
+    if (info && info.db_path) document.getElementById("diag").textContent = "Файл базы данных турнира: " + info.db_path;
+  } catch (e) { /* тихо */ }
+})();
+</script>
+</body>
+</html>

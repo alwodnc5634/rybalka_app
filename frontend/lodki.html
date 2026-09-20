@@ -1,0 +1,704 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<title>Рыбалка — Лодки</title>
+<style>
+  :root {
+    --accent: #1a5f7a;
+    --accent-light: #eaf3f6;
+    --border: #d0d7dc;
+    --danger: #c0392b;
+  }
+  * { box-sizing: border-box; }
+  body { font-family: "Segoe UI", Tahoma, sans-serif; margin: 0; background: #f6f8f9; color: #222; }
+  header { background: var(--accent); color: white; padding: 14px 24px; display: flex; align-items: center; gap: 24px; flex-wrap: wrap; }
+  header h1 { font-size: 18px; margin: 0; font-weight: 600; }
+  nav { display: flex; gap: 4px; }
+  nav button { background: transparent; border: none; color: white; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 14px; }
+  nav button.active { background: rgba(255,255,255,0.2); font-weight: 600; }
+  main { padding: 24px; max-width: 1100px; margin: 0 auto; }
+  .card { background: white; border: 1px solid var(--border); border-radius: 10px; padding: 20px; margin-bottom: 16px; }
+  h2 { margin-top: 0; font-size: 16px; color: var(--accent); }
+  h3 { font-size: 13px; color: #555; text-transform: uppercase; letter-spacing: 0.03em; margin: 16px 0 8px; }
+  table { width: 100%; border-collapse: collapse; }
+  th, td { padding: 6px 8px; text-align: left; border-bottom: 1px solid var(--border); font-size: 13px; }
+  th { color: #555; font-weight: 600; background: var(--accent-light); }
+  input, select { padding: 6px 8px; border: 1px solid var(--border); border-radius: 6px; font-size: 14px; }
+  button.primary { background: var(--accent); color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 14px; }
+  button.primary:hover { opacity: 0.9; }
+  button.link { background: none; border: none; color: var(--accent); cursor: pointer; text-decoration: underline; font-size: 13px; }
+  button.danger-link { color: var(--danger); }
+  .member-row { display: flex; gap: 8px; margin-bottom: 6px; flex-wrap: wrap; }
+  .member-row input { flex: 1; min-width: 120px; }
+  .place-1 { font-weight: 700; color: #b8860b; }
+  .place-2 { font-weight: 700; color: #808080; }
+  .place-3 { font-weight: 700; color: #a0522d; }
+  .hint { color: #888; font-size: 12px; margin-top: 4px; }
+  .field-row { display: flex; gap: 10px; margin-bottom: 8px; flex-wrap: wrap; align-items: center; }
+  .field-row label { font-size: 13px; color: #555; min-width: 140px; }
+  .field-row input, .field-row select { flex: 1; min-width: 160px; }
+
+  /* --- Официальный протокол для печати --- */
+  .protocol-header { text-align: center; margin-bottom: 16px; }
+  .protocol-header .title { font-weight: 700; font-size: 15px; margin-bottom: 4px; }
+  .protocol-header .status { font-weight: 600; font-size: 14px; margin-bottom: 4px; }
+  .protocol-header .discipline { font-size: 13px; margin-bottom: 8px; white-space: pre-line; }
+  .protocol-header .datevenue { display: flex; justify-content: space-between; font-size: 13px; padding: 0 4px; }
+  .protocol-table th, .protocol-table td { border: 1px solid #999; text-align: center; vertical-align: middle; }
+  .protocol-table td.name-cell { text-align: left; }
+  .signatures { margin-top: 28px; font-size: 13px; }
+  .sig-row { display: flex; align-items: flex-end; gap: 8px; margin-bottom: 22px; }
+  .sig-role { min-width: 260px; }
+  .sig-line { flex: 1; border-bottom: 1px solid #333; min-width: 120px; text-align: center; font-size: 11px; color: #888; padding-bottom: 2px; }
+  .sig-name { min-width: 160px; text-align: center; }
+
+  #toast { position: fixed; bottom: 20px; right: 20px; padding: 12px 18px; border-radius: 8px;
+    font-size: 14px; color: white; box-shadow: 0 2px 10px rgba(0,0,0,0.2); display: none; z-index: 999; max-width: 360px; }
+  #toast.ok { background: #2e7d32; }
+  #toast.err { background: var(--danger); }
+  #diag { color: #999; font-size: 11px; padding: 8px 24px; }
+
+  @media print {
+    header, nav, .no-print { display: none !important; }
+    body { background: white; }
+    main { padding: 0; max-width: 100%; }
+    .card { border: none; padding: 0; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <a href="launcher.html" class="no-print" style="color:white; text-decoration:none; opacity:0.85; font-size:13px">← Турниры</a>
+  <h1 id="app-title">🎣 Рыбалка — Лодки</h1>
+  <nav>
+    <button data-tab="reg" class="active">Регистрация</button>
+    <button data-tab="weigh">Взвешивание</button>
+    <button data-tab="results">Протокол</button>
+    <button data-tab="evsk">Разряды</button>
+  </nav>
+</header>
+
+<main>
+
+  <!-- РЕГИСТРАЦИЯ -->
+  <section id="tab-reg">
+    <div class="card">
+      <h2>Данные турнира</h2>
+      <div class="field-row"><label>Полное название</label><input id="t-name" style="flex:1"></div>
+      <div class="field-row"><label>Статус соревнования</label><input id="t-status" placeholder="напр. Чемпионат Вологодской области"></div>
+      <div class="field-row"><label>Дисциплина</label><input id="t-discipline"></div>
+      <div class="field-row"><label>Возрастная/половая группа</label><input id="t-gender" placeholder="мужчины, женщины"></div>
+      <div class="field-row"><label>Место проведения</label><input id="t-venue"></div>
+      <div class="field-row"><label>Дата</label><input id="t-date" type="date"></div>
+      <div class="field-row">
+        <label>Статус для расчёта разрядов (ЕВСК)</label>
+        <select id="t-evsk-tier"><option value="">— не указан —</option></select>
+      </div>
+      <div class="field-row">
+        <label><input type="checkbox" id="t-auto-draw" style="width:auto"> Автоматическая жеребьёвка (очерёдность старта)</label>
+      </div>
+      <button class="primary" onclick="saveTournament()">Сохранить</button>
+      <div id="draw-block" class="no-print" style="margin-top:12px; display:none">
+        <button class="primary" onclick="runDraw()">🎲 Провести жеребьёвку</button>
+        <span class="hint">Заново случайно распределит очерёдность старта у ВСЕХ зарегистрированных пар (можно поправить вручную после).</span>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Судейская коллегия (для подписей в протоколе)</h2>
+      <div id="judges-list"></div>
+      <button class="link" onclick="addJudgeRow()">+ добавить судью</button>
+      <div style="margin-top:12px"><button class="primary" onclick="saveJudges()">Сохранить судей</button></div>
+    </div>
+
+    <div class="card">
+      <h2>Команды (опционально — только если несколько пар объединены в команду)</h2>
+      <div class="field-row">
+        <label>Название команды</label><input id="new-team-name">
+        <label>Регион</label><input id="new-team-region" style="max-width:180px">
+        <button class="primary" onclick="createTeam()">Добавить команду</button>
+      </div>
+      <table>
+        <thead><tr><th>№</th><th>Команда</th><th>Регион</th><th class="no-print"></th></tr></thead>
+        <tbody id="teams-table-body"></tbody>
+      </table>
+    </div>
+
+    <div class="card">
+      <h2>Новая пара</h2>
+      <div class="field-row">
+        <label>Рег. номер пары</label><input id="new-regnum" type="number" style="max-width:100px">
+        <label>Название пары</label><input id="new-name" style="flex:2">
+      </div>
+      <div class="field-row">
+        <label>Команда (если есть)</label>
+        <select id="new-team-select"><option value="">— без команды —</option></select>
+        <label>Очерёдность старта</label><input id="new-start-order" type="number" style="max-width:100px">
+      </div>
+      <h3>Спортсмены</h3>
+      <div id="new-members"></div>
+      <button class="link" onclick="addMemberRow()">+ добавить спортсмена</button>
+      <div style="margin-top:12px">
+        <button class="primary" onclick="createEntry()">Зарегистрировать пару</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Зарегистрированные пары</h2>
+      <table id="entries-table">
+        <thead><tr><th>№</th><th>Пара</th><th>Команда</th><th>Спортсмены</th><th class="no-print"></th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ВЗВЕШИВАНИЕ -->
+  <section id="tab-weigh" style="display:none">
+    <div class="card">
+      <h2>Взвешивание</h2>
+      <table>
+        <thead><tr><th>№</th><th>Пара</th><th>Вес</th><th>Кол-во рыб</th><th class="no-print"></th></tr></thead>
+        <tbody id="weigh-table-body"></tbody>
+      </table>
+      <p class="hint">Введите вес и количество рыб, затем нажмите «Сохранить» в строке пары.</p>
+    </div>
+  </section>
+
+  <!-- ПРОТОКОЛ -->
+  <section id="tab-results" style="display:none">
+    <div class="card">
+      <div style="display:flex; justify-content:flex-end; margin-bottom:12px" class="no-print">
+        <button class="primary" onclick="window.print()">🖨️ Печать</button>
+      </div>
+
+      <div class="protocol-header">
+        <div class="title">Протокол технических результатов</div>
+        <div class="status" id="ph-status"></div>
+        <div class="discipline" id="ph-discipline"></div>
+        <div class="datevenue"><span id="ph-date"></span><span id="ph-venue"></span></div>
+      </div>
+
+      <table class="protocol-table" id="protocol-table">
+        <thead id="protocol-thead"></thead>
+        <tbody id="protocol-tbody"></tbody>
+      </table>
+
+      <div class="signatures" id="signatures"></div>
+    </div>
+  </section>
+
+  <!-- РАЗРЯДЫ (ЕВСК) -->
+  <section id="tab-evsk" style="display:none">
+    <div class="card">
+      <h2>Расчёт спортивных разрядов и званий (ЕВСК)</h2>
+      <p class="hint">
+        Расчёт по нормативам Приложения № 61 к приказу Минспорта России. Учитывается: статус
+        соревнования (указывается в «Данные турнира»), место пары, наличие улова (без улова —
+        норматив не засчитывается), уже имеющийся разряд каждого спортсмена (для проверки условия
+        "наличие предыдущего разряда"). Судейские категории для присвоения разряда программой
+        не проверяются — сверьте их самостоятельно по официальному тексту норм.
+      </p>
+      <div id="evsk-status" class="hint"></div>
+      <h3>Личный/парный зачёт</h3>
+      <table>
+        <thead><tr><th>Пара</th><th>ФИО</th><th>Место</th><th>Имеющийся разряд</th><th>Присвоенный разряд</th><th>Примечание</th></tr></thead>
+        <tbody id="evsk-individuals-body"></tbody>
+      </table>
+      <h3>Командный зачёт</h3>
+      <table>
+        <thead><tr><th>Команда</th><th>Пара</th><th>ФИО</th><th>Место команды</th><th>Имеющийся разряд</th><th>Присвоенный разряд</th><th>Примечание</th></tr></thead>
+        <tbody id="evsk-teams-body"></tbody>
+      </table>
+    </div>
+  </section>
+
+<datalist id="athletes-list"></datalist>
+</main>
+
+<div id="diag" class="no-print"></div>
+<div id="toast"></div>
+
+<script>
+const API = "";
+let teamsCache = [];
+let athletesCache = [];
+
+// ---------- Общие помощники: сеть, ошибки, уведомления ----------
+function toast(msg, ok = true) {
+  const el = document.getElementById("toast");
+  el.textContent = msg;
+  el.className = ok ? "ok" : "err";
+  el.style.display = "block";
+  clearTimeout(el._t);
+  el._t = setTimeout(() => { el.style.display = "none"; }, ok ? 2200 : 6000);
+}
+
+async function apiGet(url) {
+  let res;
+  try {
+    res = await fetch(API + url);
+  } catch (e) {
+    throw new Error("Нет связи с сервером программы. Проверьте, что окно с сервером (чёрное окно) не закрыто.");
+  }
+  let body;
+  try { body = await res.json(); } catch (e) { body = null; }
+  if (!res.ok) throw new Error((body && body.error) || `Ошибка сервера (${res.status})`);
+  return body;
+}
+
+async function apiSend(method, url, payload) {
+  let res;
+  try {
+    res = await fetch(API + url, {
+      method,
+      headers: { "Content-Type": "application/json" },
+      body: payload === undefined ? undefined : JSON.stringify(payload),
+    });
+  } catch (e) {
+    throw new Error("Нет связи с сервером программы. Проверьте, что окно с сервером (чёрное окно) не закрыто.");
+  }
+  let body;
+  try { body = await res.json(); } catch (e) { body = null; }
+  if (!res.ok) throw new Error((body && body.error) || `Ошибка сервера (${res.status})`);
+  return body;
+}
+
+async function loadDiag() {
+  try {
+    const info = await apiGet("/api/info");
+    document.getElementById("diag").textContent = "Файл базы данных: " + info.db_path;
+  } catch (e) {
+    document.getElementById("diag").textContent = "";
+  }
+}
+
+async function loadAthletesCache() {
+  try {
+    athletesCache = await apiGet("/api/athletes");
+    const list = document.getElementById("athletes-list");
+    if (list) list.innerHTML = athletesCache.map(a => `<option value="${a.full_name}">`).join("");
+  } catch (e) { /* тихо: автоподсказки не критичны */ }
+}
+function findAthlete(fio) {
+  return athletesCache.find(a => a.full_name.trim().toLowerCase() === fio.trim().toLowerCase());
+}
+
+function switchTab(tab) {
+  document.querySelectorAll("nav button").forEach(b => b.classList.toggle("active", b.dataset.tab === tab));
+  ["reg","weigh","results","evsk"].forEach(t => {
+    document.getElementById("tab-" + t).style.display = (t === tab) ? "block" : "none";
+  });
+  if (tab === "weigh") loadWeighTab();
+  if (tab === "results") loadResultsTab();
+  if (tab === "evsk") loadEvskTab();
+}
+document.querySelectorAll("nav button").forEach(b => b.onclick = () => switchTab(b.dataset.tab));
+
+// ---------- Турнир ----------
+async function loadEvskTierOptions() {
+  try {
+    const tiers = await apiGet("/api/evsk_tiers");
+    const sel = document.getElementById("t-evsk-tier");
+    const prev = sel.value;
+    sel.innerHTML = '<option value="">— не указан —</option>' +
+      tiers.map(t => `<option value="${t.replace(/"/g, '&quot;')}">${t}</option>`).join("");
+    sel.value = prev;
+  } catch (e) { /* тихо: не критично для остальной работы */ }
+}
+
+async function loadTournament() {
+  try {
+    await loadEvskTierOptions();
+    const t = await apiGet("/api/tournament");
+    document.getElementById("t-name").value = t.name_full || "";
+    document.getElementById("t-status").value = t.status || "";
+    document.getElementById("t-discipline").value = t.discipline || "";
+    document.getElementById("t-gender").value = t.gender_group || "";
+    document.getElementById("t-venue").value = t.venue || "";
+    document.getElementById("t-date").value = t.date_tour1 || "";
+    document.getElementById("t-evsk-tier").value = t.evsk_tier || "";
+    document.getElementById("t-auto-draw").checked = !!t.auto_draw_enabled;
+    document.getElementById("draw-block").style.display = t.auto_draw_enabled ? "block" : "none";
+  } catch (e) { toast("Не удалось загрузить данные турнира: " + e.message, false); }
+}
+async function saveTournament() {
+  try {
+    const autoDraw = document.getElementById("t-auto-draw").checked;
+    await apiSend("POST", "/api/tournament", {
+      name_full: document.getElementById("t-name").value,
+      status: document.getElementById("t-status").value,
+      discipline: document.getElementById("t-discipline").value,
+      gender_group: document.getElementById("t-gender").value,
+      venue: document.getElementById("t-venue").value,
+      date_tour1: document.getElementById("t-date").value,
+      evsk_tier: document.getElementById("t-evsk-tier").value,
+      auto_draw_enabled: autoDraw,
+    });
+    document.getElementById("draw-block").style.display = autoDraw ? "block" : "none";
+    toast("Данные турнира сохранены ✓");
+  } catch (e) { toast("Не сохранено: " + e.message, false); }
+}
+
+async function runDraw() {
+  if (!confirm("Заново случайно распределить очерёдность старта у ВСЕХ пар? Текущие значения будут перезаписаны.")) return;
+  try {
+    const r = await apiSend("POST", "/api/draw", {});
+    await loadEntries();
+    toast(`Жеребьёвка проведена: ${r.count} пар ✓`);
+  } catch (e) { toast("Не удалось провести жеребьёвку: " + e.message, false); }
+}
+
+// ---------- Разряды (ЕВСК) ----------
+function evskRow(cells) {
+  const tr = document.createElement("tr");
+  tr.innerHTML = cells.map(c => `<td>${c ?? ""}</td>`).join("");
+  return tr;
+}
+async function loadEvskTab() {
+  let data;
+  try {
+    data = await apiGet("/api/evsk");
+  } catch (e) { toast("Не удалось рассчитать разряды: " + e.message, false); return; }
+  const statusEl = document.getElementById("evsk-status");
+  statusEl.textContent = data.tier
+    ? `Статус соревнования: «${data.tier}», участников: ${data.field_size}`
+    : "Статус соревнования не указан в «Данные турнира» — расчёт невозможен, укажите статус.";
+  const ib = document.getElementById("evsk-individuals-body");
+  ib.innerHTML = "";
+  data.individuals.forEach(r => ib.appendChild(evskRow([
+    r.pair_name, r.full_name, r.place, r.current_rank, r.rank_label || "—", r.note,
+  ])));
+  const tb = document.getElementById("evsk-teams-body");
+  tb.innerHTML = "";
+  data.teams.forEach(r => tb.appendChild(evskRow([
+    r.team_name, r.pair_name, r.full_name, r.place, r.current_rank, r.rank_label || "—", r.note,
+  ])));
+}
+
+// ---------- Судьи ----------
+function addJudgeRow(role="", category="", full_name="") {
+  const wrap = document.getElementById("judges-list");
+  const row = document.createElement("div");
+  row.className = "member-row";
+  row.innerHTML = `
+    <input placeholder="Роль (напр. Главный судья)" class="j-role" value="${role}" style="flex:2">
+    <input placeholder="Категория (напр. судья 1К)" class="j-category" value="${category}" style="flex:1">
+    <input placeholder="ФИО" class="j-name" value="${full_name}" style="flex:2">
+    <button class="link danger-link" onclick="this.parentElement.remove()">×</button>
+  `;
+  wrap.appendChild(row);
+}
+async function saveJudges() {
+  const judges = [...document.querySelectorAll("#judges-list .member-row")].map(row => ({
+    role: row.querySelector(".j-role").value.trim(),
+    category: row.querySelector(".j-category").value.trim(),
+    full_name: row.querySelector(".j-name").value.trim(),
+  })).filter(j => j.role || j.full_name);
+  try {
+    await apiSend("POST", "/api/judges", { judges });
+    toast("Судьи сохранены ✓");
+  } catch (e) { toast("Не сохранено: " + e.message, false); }
+}
+async function loadJudges() {
+  try {
+    const judges = await apiGet("/api/judges");
+    document.getElementById("judges-list").innerHTML = "";
+    if (judges.length === 0) {
+      ["Главный судья", "Главный секретарь"].forEach(r => addJudgeRow(r, "судья 1К"));
+    } else {
+      judges.forEach(j => addJudgeRow(j.role, j.category, j.full_name));
+    }
+  } catch (e) { toast("Не удалось загрузить судей: " + e.message, false); }
+}
+
+// ---------- Команды ----------
+async function createTeam() {
+  const name = document.getElementById("new-team-name").value.trim();
+  if (!name) { alert("Введите название команды"); return; }
+  const region = document.getElementById("new-team-region").value.trim();
+  try {
+    await apiSend("POST", "/api/teams", { name, region });
+    document.getElementById("new-team-name").value = "";
+    document.getElementById("new-team-region").value = "";
+    await loadTeams();
+    toast("Команда добавлена ✓");
+  } catch (e) { toast("Не сохранено: " + e.message, false); }
+}
+async function deleteTeam(id) {
+  if (!confirm("Удалить команду? Пары останутся, но станут отдельными (без команды).")) return;
+  try {
+    await apiSend("DELETE", `/api/teams/${id}`);
+    await loadTeams();
+    await loadEntries();
+    toast("Команда удалена ✓");
+  } catch (e) { toast("Не удалено: " + e.message, false); }
+}
+async function loadTeams() {
+  try {
+    teamsCache = await apiGet("/api/teams");
+  } catch (e) { toast("Не удалось загрузить команды: " + e.message, false); return; }
+  const tbody = document.getElementById("teams-table-body");
+  tbody.innerHTML = "";
+  teamsCache.forEach(t => {
+    const tr = document.createElement("tr");
+    tr.innerHTML = `<td>${t.reg_number}</td><td>${t.name}</td><td>${t.region || ""}</td>
+      <td class="no-print"><button class="link danger-link" onclick="deleteTeam(${t.id})">удалить</button></td>`;
+    tbody.appendChild(tr);
+  });
+  const select = document.getElementById("new-team-select");
+  const prevValue = select.value;
+  select.innerHTML = '<option value="">— без команды —</option>';
+  teamsCache.forEach(t => {
+    const opt = document.createElement("option");
+    opt.value = t.id; opt.textContent = t.name;
+    select.appendChild(opt);
+  });
+  select.value = prevValue;
+}
+
+// ---------- Регистрация пар ----------
+function addMemberRow(fio = "", razryad = "", birth = "") {
+  const wrap = document.getElementById("new-members");
+  const row = document.createElement("div");
+  row.className = "member-row";
+  row.innerHTML = `
+    <input placeholder="ФИО спортсмена (начните вводить — предложит из базы)" class="m-fio" list="athletes-list" value="${fio}" style="flex:2">
+    <input placeholder="Разряд (б/р, КМС, МС...)" class="m-razryad" style="max-width:140px" value="${razryad}">
+    <input type="date" class="m-birth" style="max-width:160px" value="${birth}">
+    <button class="link danger-link" onclick="this.parentElement.remove()">×</button>
+  `;
+  const fioInput = row.querySelector(".m-fio");
+  fioInput.addEventListener("change", () => {
+    const found = findAthlete(fioInput.value);
+    if (found) {
+      row.querySelector(".m-razryad").value = found.rank_category || "";
+      row.querySelector(".m-birth").value = found.birth_date || "";
+    }
+  });
+  wrap.appendChild(row);
+}
+
+async function createEntry() {
+  const name = document.getElementById("new-name").value.trim();
+  if (!name) { alert("Введите название пары"); return; }
+  const regnum = document.getElementById("new-regnum").value;
+  const teamId = document.getElementById("new-team-select").value;
+  const startOrder = document.getElementById("new-start-order").value;
+  const members = [...document.querySelectorAll("#new-members .member-row")].map(row => ({
+    full_name: row.querySelector(".m-fio").value.trim(),
+    rank_category: row.querySelector(".m-razryad").value.trim(),
+    birth_date: row.querySelector(".m-birth").value,
+  })).filter(m => m.full_name);
+
+  try {
+    await apiSend("POST", "/api/entries", {
+      name, reg_number: regnum ? parseInt(regnum) : null,
+      team_id: teamId ? parseInt(teamId) : null,
+      start_order: startOrder ? parseInt(startOrder) : null,
+      members
+    });
+
+    document.getElementById("new-name").value = "";
+    document.getElementById("new-regnum").value = "";
+    document.getElementById("new-start-order").value = "";
+    document.getElementById("new-team-select").value = "";
+    document.getElementById("new-members").innerHTML = "";
+    addMemberRow(); addMemberRow();
+    await loadEntries();
+    await loadAthletesCache();
+    toast("Пара зарегистрирована ✓");
+  } catch (e) { toast("Не сохранено: " + e.message, false); }
+}
+
+async function deleteEntry(id) {
+  if (!confirm("Удалить пару?")) return;
+  try {
+    await apiSend("DELETE", `/api/entries/${id}`);
+    await loadEntries();
+    toast("Пара удалена ✓");
+  } catch (e) { toast("Не удалено: " + e.message, false); }
+}
+
+async function loadEntries() {
+  let entries;
+  try {
+    entries = await apiGet("/api/entries");
+  } catch (e) { toast("Не удалось загрузить пары: " + e.message, false); return; }
+  const tbody = document.querySelector("#entries-table tbody");
+  tbody.innerHTML = "";
+  entries.forEach(e => {
+    const tr = document.createElement("tr");
+    const membersStr = e.members.map(m => `${m.full_name}${m.rank_category ? ", " + m.rank_category : ""}`).join("<br>");
+    tr.innerHTML = `<td>${e.reg_number ?? ""}</td><td>${e.name}</td><td>${e.team_name || ""}</td><td>${membersStr}</td>
+      <td class="no-print"><button class="link danger-link" onclick="deleteEntry(${e.id})">удалить</button></td>`;
+    tbody.appendChild(tr);
+  });
+}
+
+// ---------- Взвешивание ----------
+async function loadWeighTab() {
+  let entries;
+  try {
+    entries = await apiGet("/api/entries");
+  } catch (e) { toast("Не удалось загрузить пары: " + e.message, false); return; }
+  const tbody = document.getElementById("weigh-table-body");
+  tbody.innerHTML = "";
+  entries.forEach(e => {
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td>${e.reg_number ?? ""}</td>
+      <td>${e.name}</td>
+      <td><input type="number" step="1" style="width:100px" value="${e.weight_score ?? ""}" id="w-${e.id}"></td>
+      <td><input type="number" step="1" style="width:70px" value="${e.fish_count ?? ""}" id="f-${e.id}"></td>
+      <td class="no-print"><button class="link" onclick="saveWeigh(${e.id})">Сохранить</button></td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+async function saveWeigh(entryId) {
+  const weight = parseFloat(document.getElementById("w-" + entryId).value) || 0;
+  const fish = parseInt(document.getElementById("f-" + entryId).value) || 0;
+  try {
+    await apiSend("POST", `/api/entries/${entryId}/weigh`, { weight_score: weight, fish_count: fish });
+    toast("Взвешивание сохранено ✓");
+  } catch (e) { toast("Не сохранено: " + e.message, false); }
+}
+
+// ---------- Протокол ----------
+function fmtDate(iso) {
+  if (!iso) return "";
+  const [y,m,d] = iso.split("-");
+  return d && m && y ? `${d}.${m}.${y}` : iso;
+}
+
+async function loadResultsTab() {
+  let t, results, judges;
+  try {
+    t = await apiGet("/api/tournament");
+    results = await apiGet("/api/results");
+    judges = await apiGet("/api/judges");
+  } catch (e) { toast("Не удалось загрузить протокол: " + e.message, false); return; }
+
+  document.getElementById("ph-status").textContent = t.status || t.name_full || "";
+  document.getElementById("ph-discipline").textContent =
+    (t.discipline || "") + (t.gender_group ? "\n(" + t.gender_group + ")" : "");
+  document.getElementById("ph-date").textContent = fmtDate(t.date_tour1);
+  document.getElementById("ph-venue").textContent = t.venue || "";
+
+  const hasTeams = results.some(r => r.team);
+
+  const thead = document.getElementById("protocol-thead");
+  const tbody = document.getElementById("protocol-tbody");
+
+  const cols = ["№ пары", "Команда", "ФИО", "Разряд/звание", "Дата рождения", "Оч. старта", "Баллы", "Место пары"];
+  if (hasTeams) cols.push("Сумма баллов", "Сумма мест", "Место ком.");
+  thead.innerHTML = "<tr>" + cols.map(c => `<th>${c}</th>`).join("") + "</tr>";
+
+  tbody.innerHTML = "";
+
+  // Построение строк протокола — вынесено в проверенную (юнит-тестом) функцию.
+  // Каждая ячейка — {text, rowspan?} либо null (значит "пропустить, покрыто
+  // rowspan-ом предыдущей строки"). Такой подход исключает дублирование
+  // ячеек "Команда"/"Сумма" при команде из нескольких пар.
+  const teamRowCounts = {};
+  results.forEach(r => {
+    if (r.team_id) {
+      teamRowCounts[r.team_id] = (teamRowCounts[r.team_id] || 0) + Math.max(r.members.length, 1);
+    }
+  });
+
+  const teamNameRendered = new Set();
+  const teamSumRendered = new Set();
+
+  results.forEach(r => {
+    const membersToShow = r.members.length ? r.members : [{full_name:"", rank_category:"", birth_date:""}];
+    membersToShow.forEach((m, idx) => {
+      const cells = [];
+
+      cells.push({ text: idx === 0 ? (r.team_id ? `${r.team.reg_number}-${r.pair_index_in_team}` : (r.reg_number ?? '')) : "" });
+
+      if (r.team_id) {
+        if (!teamNameRendered.has(r.team_id)) {
+          cells.push({ text: r.team.team_name, rowspan: teamRowCounts[r.team_id], nameCell: true });
+          teamNameRendered.add(r.team_id);
+        } else {
+          cells.push(null);
+        }
+      } else {
+        cells.push({ text: "" });
+      }
+
+      cells.push({ text: m.full_name, nameCell: true });
+      cells.push({ text: typeof m.rank_category === 'number' ? m.rank_category : (m.rank_category || "") });
+      cells.push({ text: fmtDate(m.birth_date) });
+      cells.push({ text: idx === 0 ? (r.start_order ?? "") : "" });
+      cells.push({ text: idx === 0 ? (r.weight_score ?? "") : "" });
+      cells.push({ text: idx === 0 ? r.pair_place : "" });
+
+      if (hasTeams) {
+        if (r.team_id) {
+          if (!teamSumRendered.has(r.team_id)) {
+            cells.push({ text: r.team.sum_weight, rowspan: teamRowCounts[r.team_id] });
+            cells.push({ text: r.team.sum_places, rowspan: teamRowCounts[r.team_id] });
+            cells.push({ text: r.team.team_place, rowspan: teamRowCounts[r.team_id] });
+            teamSumRendered.add(r.team_id);
+          } else {
+            cells.push(null, null, null);
+          }
+        } else {
+          cells.push({ text: "" }, { text: "" }, { text: "" });
+        }
+      }
+
+      const tr = document.createElement("tr");
+      let html = "";
+      cells.forEach(c => {
+        if (c === null) return; // покрыто rowspan-ом предыдущей строки
+        const cls = c.nameCell ? ' class="name-cell"' : '';
+        const rs = c.rowspan ? ` rowspan="${c.rowspan}"` : '';
+        html += `<td${cls}${rs}>${c.text}</td>`;
+      });
+      tr.innerHTML = html;
+      tbody.appendChild(tr);
+    });
+  });
+
+  // подписи
+  const sigDiv = document.getElementById("signatures");
+  sigDiv.innerHTML = judges.map(j => `
+    <div class="sig-row">
+      <div class="sig-role">${j.role}</div>
+      <div class="sig-line">подпись</div>
+      <div class="sig-name">(${j.full_name || ""})</div>
+    </div>
+  `).join("");
+}
+
+// ---------- init ----------
+(async function init() {
+  // Проверяем, что в лаунчере действительно открыт турнир дисциплины «лодки».
+  // Если нет (открыли эту страницу напрямую, или открыт турнир другой
+  // дисциплины) — отправляем в лаунчер, а не показываем пустую/чужую форму.
+  let current;
+  try {
+    current = await apiGet("/api/launcher/current");
+  } catch (e) { current = null; }
+  if (!current || !current.id || current.discipline_code !== "lodki") {
+    location.href = "launcher.html";
+    return;
+  }
+  document.getElementById("app-title").textContent = "🎣 " + current.name_full;
+
+  addMemberRow(); addMemberRow();
+  loadDiag();
+  await loadAthletesCache();
+  await loadTournament();
+  await loadJudges();
+  await loadTeams();
+  await loadEntries();
+})();
+</script>
+</body>
+</html>

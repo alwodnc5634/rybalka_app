@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<title>Рыбалка — Турниры</title>
+<style>
+  :root { --accent: #1a5f7a; --accent-light: #eaf3f6; --border: #d0d7dc; --danger: #c0392b; }
+  * { box-sizing: border-box; }
+  body { font-family: "Segoe UI", Tahoma, sans-serif; margin: 0; background: #f6f8f9; color: #222; }
+  header { background: var(--accent); color: white; padding: 14px 24px; }
+  header h1 { font-size: 18px; margin: 0; font-weight: 600; }
+  header .sub { font-size: 12px; opacity: 0.85; margin-top: 2px; }
+  main { padding: 24px; max-width: 900px; margin: 0 auto; }
+  .card { background: white; border: 1px solid var(--border); border-radius: 10px; padding: 20px; margin-bottom: 16px; }
+  h2 { margin-top: 0; font-size: 16px; color: var(--accent); }
+  table { width: 100%; border-collapse: collapse; }
+  th, td { padding: 8px 10px; text-align: left; border-bottom: 1px solid var(--border); font-size: 13px; vertical-align: top; }
+  th { color: #555; font-weight: 600; background: var(--accent-light); }
+  .badge { display: inline-block; font-size: 11px; padding: 2px 8px; border-radius: 10px; background: #eef; color: #445; margin-left: 6px; }
+  .badge.dev { background: #fff3cd; color: #7a5c00; }
+  input, select { padding: 6px 8px; border: 1px solid var(--border); border-radius: 6px; font-size: 14px; }
+  button.primary { background: var(--accent); color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 14px; }
+  button.primary:hover { opacity: 0.9; }
+  button.link { background: none; border: none; color: var(--accent); cursor: pointer; text-decoration: underline; font-size: 13px; }
+  button.danger-link { color: var(--danger); }
+  .field-row { display: flex; gap: 10px; margin-bottom: 8px; flex-wrap: wrap; align-items: center; }
+  .field-row label { font-size: 13px; color: #555; min-width: 140px; }
+  .field-row input, .field-row select { flex: 1; min-width: 160px; }
+  .empty-hint { color: #888; font-size: 13px; padding: 12px 0; }
+  #toast { position: fixed; bottom: 20px; right: 20px; padding: 12px 18px; border-radius: 8px;
+    font-size: 14px; color: white; box-shadow: 0 2px 10px rgba(0,0,0,0.2); display: none; z-index: 999; max-width: 360px; }
+  #toast.ok { background: #2e7d32; }
+  #toast.err { background: var(--danger); }
+  #diag { color: #999; font-size: 11px; padding: 8px 24px; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>🎣 Рыбалка — турниры</h1>
+  <div class="sub">Выберите турнир, чтобы открыть, или создайте новый</div>
+</header>
+
+<main>
+  <div class="card">
+    <h2>Турниры</h2>
+    <table>
+      <thead><tr><th>Название</th><th>Дисциплина</th><th>Место</th><th>Дата</th><th></th></tr></thead>
+      <tbody id="tournaments-body"></tbody>
+    </table>
+    <div class="empty-hint" id="empty-hint" style="display:none">Пока нет ни одного турнира — создайте первый ниже.</div>
+  </div>
+
+  <div class="card">
+    <h2>Новый турнир</h2>
+    <div class="field-row">
+      <label>Название</label><input id="new-name" style="flex:2" placeholder="напр. Чемпионат Вологодской области">
+    </div>
+    <div class="field-row">
+      <label>Дисциплина</label><select id="new-discipline"></select>
+    </div>
+    <div class="field-row">
+      <label>Место проведения</label><input id="new-venue">
+      <label>Дата</label><input id="new-date" type="date">
+    </div>
+    <button class="primary" onclick="createTournament()">Создать и открыть</button>
+  </div>
+</main>
+
+<div id="diag" class="no-print"></div>
+<div id="toast"></div>
+
+<script>
+function toast(msg, ok = true) {
+  const el = document.getElementById("toast");
+  el.textContent = msg;
+  el.className = ok ? "ok" : "err";
+  el.style.display = "block";
+  clearTimeout(el._t);
+  el._t = setTimeout(() => { el.style.display = "none"; }, ok ? 2200 : 6000);
+}
+async function apiGet(url) {
+  const res = await fetch(url);
+  let body; try { body = await res.json(); } catch (e) { body = null; }
+  if (!res.ok) throw new Error((body && body.error) || `Ошибка сервера (${res.status})`);
+  return body;
+}
+async function apiSend(method, url, payload) {
+  const res = await fetch(url, {
+    method, headers: { "Content-Type": "application/json" },
+    body: payload === undefined ? undefined : JSON.stringify(payload),
+  });
+  let body; try { body = await res.json(); } catch (e) { body = null; }
+  if (!res.ok) throw new Error((body && body.error) || `Ошибка сервера (${res.status})`);
+  return body;
+}
+
+function fmtDate(iso) {
+  if (!iso) return "";
+  const [y,m,d] = iso.split("-");
+  return d && m && y ? `${d}.${m}.${y}` : iso;
+}
+
+async function loadDisciplines() {
+  const list = await apiGet("/api/launcher/disciplines");
+  const select = document.getElementById("new-discipline");
+  select.innerHTML = list.map(d =>
+    `<option value="${d.code}">${d.name}${d.implemented ? "" : " (модуль в разработке)"}</option>`
+  ).join("");
+  return list;
+}
+
+async function loadTournaments() {
+  let list;
+  try {
+    list = await apiGet("/api/launcher/tournaments");
+  } catch (e) { toast("Не удалось загрузить список турниров: " + e.message, false); return; }
+  const tbody = document.getElementById("tournaments-body");
+  tbody.innerHTML = "";
+  document.getElementById("empty-hint").style.display = list.length ? "none" : "block";
+  list.forEach(t => {
+    const tr = document.createElement("tr");
+    const badge = t.implemented ? "" : `<span class="badge dev">в разработке</span>`;
+    tr.innerHTML = `
+      <td>${t.name_full}</td>
+      <td>${t.discipline_name}${badge}</td>
+      <td>${t.venue || ""}</td>
+      <td>${fmtDate(t.date_tour1)}</td>
+      <td style="text-align:right; white-space:nowrap">
+        <button class="link" onclick="openTournament(${t.id})">Открыть</button>
+        <button class="link danger-link" onclick="deleteTournament(${t.id}, '${t.name_full.replace(/'/g, "\\'")}')">удалить</button>
+      </td>`;
+    tbody.appendChild(tr);
+  });
+}
+
+const DISCIPLINE_PAGES = {
+  lodki: "lodki.html", forel: "forel.html",
+  donka: "zone_weight.html", poplavok: "zone_weight.html",
+  blesna: "zone_weight.html", mormyshka: "zone_weight.html",
+};
+
+async function openTournament(id) {
+  try {
+    const cur = await apiSend("POST", "/api/launcher/open", { id });
+    location.href = DISCIPLINE_PAGES[cur.discipline_code] || (cur.implemented ? "lodki.html" : "stub.html");
+  } catch (e) { toast("Не удалось открыть турнир: " + e.message, false); }
+}
+
+async function createTournament() {
+  const name_full = document.getElementById("new-name").value.trim();
+  if (!name_full) { alert("Введите название турнира"); return; }
+  const discipline_code = document.getElementById("new-discipline").value;
+  const venue = document.getElementById("new-venue").value.trim();
+  const date_tour1 = document.getElementById("new-date").value;
+  try {
+    const created = await apiSend("POST", "/api/launcher/tournaments", { name_full, discipline_code, venue, date_tour1 });
+    await openTournament(created.id);
+  } catch (e) { toast("Не удалось создать турнир: " + e.message, false); }
+}
+
+async function deleteTournament(id, name) {
+  if (!confirm(`Удалить турнир «${name}» и все его данные без возможности восстановления?`)) return;
+  try {
+    await apiSend("DELETE", `/api/launcher/tournaments/${id}`);
+    await loadTournaments();
+    toast("Турнир удалён ✓");
+  } catch (e) { toast("Не удалено: " + e.message, false); }
+}
+
+async function loadDiag() {
+  try {
+    const info = await apiGet("/api/info");
+    document.getElementById("diag").textContent = "Файл реестра турниров: " + info.registry_path;
+  } catch (e) { /* тихо */ }
+}
+
+(async function init() {
+  loadDiag();
+  await loadDisciplines();
+  await loadTournaments();
+})();
+</script>
+</body>
+</html>
