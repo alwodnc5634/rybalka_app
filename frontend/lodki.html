@@ -592,7 +592,7 @@ async function loadResultsTab() {
   const thead = document.getElementById("protocol-thead");
   const tbody = document.getElementById("protocol-tbody");
 
-  const cols = ["№ пары", "Команда", "ФИО", "Разряд/звание", "Дата рождения", "Оч. старта", "Баллы", "Место пары"];
+  const cols = ["№ пары", "Команда", "ФИО", "Разряд до", "Разряд после", "Дата рождения", "Оч. старта", "Баллы", "Место пары"];
   if (hasTeams) cols.push("Сумма баллов", "Сумма мест", "Место ком.");
   thead.innerHTML = "<tr>" + cols.map(c => `<th>${c}</th>`).join("") + "</tr>";
 
@@ -631,7 +631,10 @@ async function loadResultsTab() {
       }
 
       cells.push({ text: m.full_name, nameCell: true });
-      cells.push({ text: typeof m.rank_category === 'number' ? m.rank_category : (m.rank_category || "") });
+      const rankBefore = m.rank_before ?? (typeof m.rank_category === 'number' ? m.rank_category : (m.rank_category || ""));
+      const rankAfter = m.rank_after ?? rankBefore;
+      cells.push({ text: rankBefore });
+      cells.push({ text: rankAfter, highlight: String(rankAfter) !== String(rankBefore) });
       cells.push({ text: fmtDate(m.birth_date) });
       cells.push({ text: idx === 0 ? (r.start_order ?? "") : "" });
       cells.push({ text: idx === 0 ? (r.weight_score ?? "") : "" });
@@ -656,7 +659,8 @@ async function loadResultsTab() {
       let html = "";
       cells.forEach(c => {
         if (c === null) return; // покрыто rowspan-ом предыдущей строки
-        const cls = c.nameCell ? ' class="name-cell"' : '';
+        // highlight — подсветка «разряда после», если он изменился
+        const cls = c.nameCell ? ' class="name-cell"' : (c.highlight ? ' class="place-1"' : '');
         const rs = c.rowspan ? ` rowspan="${c.rowspan}"` : '';
         html += `<td${cls}${rs}>${c.text}</td>`;
       });

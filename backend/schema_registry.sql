@@ -14,5 +14,13 @@ CREATE TABLE IF NOT EXISTS tournaments (
     venue               TEXT,
     date_tour1          TEXT,
     status              TEXT NOT NULL DEFAULT 'active' CHECK (status IN ('active','closed')),
-    created_at          TEXT NOT NULL DEFAULT (datetime('now'))
+    created_at          TEXT NOT NULL DEFAULT (datetime('now')),
+    -- v8: «весовой режим» для дисциплины «Ловля спиннингом с берега».
+    -- На соревнованиях уровня муниципального образования рыбу не измеряют
+    -- сантиметрами, а ВЗВЕШИВАЮТ, и подсчёт идёт один в один как в донке
+    -- (туры, зона на тур, одно взвешивание за тур, периодов нет). Если флаг
+    -- включён, турнир этой дисциплины заводится и считается "зонным весовым"
+    -- движком (schema_zone_weight.sql) — название дисциплины при этом
+    -- остаётся прежним. Для остальных дисциплин флаг не используется.
+    weight_mode         INTEGER NOT NULL DEFAULT 0 CHECK (weight_mode IN (0,1))
 );

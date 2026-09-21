@@ -2,14 +2,14 @@
 <html lang="ru">
 <head>
 <meta charset="UTF-8">
-<title>Рыбалка — Форель</title>
+<title>Рыбалка — Спиннинг с берега</title>
 <style>
   :root { --accent: #1a5f7a; --accent-light: #eaf3f6; --border: #d0d7dc; --danger: #c0392b; }
   * { box-sizing: border-box; }
   body { font-family: "Segoe UI", Tahoma, sans-serif; margin: 0; background: #f6f8f9; color: #222; }
   header { background: var(--accent); color: white; padding: 14px 24px; display: flex; align-items: center; gap: 24px; flex-wrap: wrap; }
   header h1 { font-size: 18px; margin: 0; font-weight: 600; }
-  nav { display: flex; gap: 4px; }
+  nav { display: flex; gap: 4px; flex-wrap: wrap; }
   nav button { background: transparent; border: none; color: white; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 14px; }
   nav button.active { background: rgba(255,255,255,0.2); font-weight: 600; }
   main { padding: 24px; max-width: 1200px; margin: 0 auto; }
@@ -35,6 +35,7 @@
   .place-1 { font-weight: 700; color: #b8860b; }
   .place-2 { font-weight: 700; color: #808080; }
   .place-3 { font-weight: 700; color: #a0522d; }
+  .draw-table select { min-width: 70px; padding: 3px 6px; }
   /* Одна карта = один физический лист А4, ДВЕ стороны (страницы печати) —
      лицевая и оборотная. Обе всегда идут одна за другой (page-break-after:
      always), кроме самой последней страницы всего задания на печать. */
@@ -64,9 +65,10 @@
 
 <header>
   <a href="launcher.html" class="no-print" style="color:white; text-decoration:none; opacity:0.85; font-size:13px">← Турниры</a>
-  <h1 id="app-title">🎣 Рыбалка — Форель</h1>
+  <h1 id="app-title">🎣 Рыбалка — Спиннинг с берега</h1>
   <nav>
     <button data-tab="reg" class="active">Регистрация</button>
+    <button data-tab="draw">Жеребьёвка</button>
     <button data-tab="printcards">Печать карт</button>
     <button data-tab="cards">Карты (периоды)</button>
     <button data-tab="results">Протокол</button>
@@ -84,33 +86,31 @@
       <div class="field-row"><label>Статус соревнования</label><input id="t-status"></div>
       <div class="field-row"><label>Возрастная/половая группа</label><input id="t-gender"></div>
       <div class="field-row"><label>Место проведения</label><input id="t-venue"></div>
-      <div class="field-row"><label>Дата 1 тура</label><input id="t-date1" type="date">
-        <label>Дата 2 тура</label><input id="t-date2" type="date"></div>
+      <div class="field-row"><label>Дата соревнования</label><input id="t-date1" type="date"></div>
       <div class="field-row">
-        <label>Количество туров</label>
-        <select id="t-tours"><option value="1">1</option><option value="2">2</option></select>
-        <label>Периодов в туре</label>
-        <select id="t-periods"><option value="3">3</option><option value="4">4</option></select>
-      </div>
-      <div class="field-row">
+        <label>Количество периодов</label>
+        <select id="t-periods"><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option></select>
         <label>Зоны (через запятую)</label><input id="t-zones" placeholder="А,Б,В">
       </div>
       <div class="field-row">
         <label>Статус для расчёта разрядов (ЕВСК)</label>
-        <select id="t-evsk-tier"><option value="">— не указан —</option></select>
+        <select id="t-evsk-tier" onchange="onTierChange()"><option value="">— не указан —</option></select>
       </div>
+      <div class="field-row">
+        <label><input type="checkbox" id="t-weight-mode" style="width:auto"> Подсчёт ПО ВЕСУ — рыба не измеряется, а взвешивается (правила как в донке)</label>
+      </div>
+      <p class="hint" id="weight-mode-hint">На соревнованиях уровня муниципального образования рыбу взвешивают, а не
+        измеряют: туры, зона на тур, одно взвешивание за тур, периодов нет. При включении турнир переедет на экран
+        весового подсчёта. Переключить можно, только пока не зарегистрирован ни один спортсмен.</p>
       <div class="field-row">
         <label><input type="checkbox" id="t-half-zones" style="width:auto" onchange="onHalfZonesToggle()"> Делить каждую зону на 2 полузоны (независимый рейтинг внутри полузоны)</label>
       </div>
       <div class="field-row">
-        <label><input type="checkbox" id="t-auto-draw" style="width:auto"> Автоматическая жеребьёвка (зона/полузона на тур + очерёдность старта)</label>
+        <label><input type="checkbox" id="t-auto-draw" style="width:auto"> Автоматическая жеребьёвка (кнопка появится на вкладке «Жеребьёвка»)</label>
       </div>
       <button class="primary" onclick="saveTournament()">Сохранить</button>
-      <p class="hint">Баллы периода = сумма длины всех рыб; при равенстве выигрывает тот, кто поймал больше рыб.</p>
-      <div id="draw-block" class="no-print" style="margin-top:12px; display:none">
-        <button class="primary" onclick="runDraw()">🎲 Провести жеребьёвку</button>
-        <span class="hint">Заново случайно распределит зону/полузону на КАЖДЫЙ тур и очерёдность старта у ВСЕХ спортсменов (можно поправить вручную после).</span>
-      </div>
+      <p class="hint">Баллы периода = сумма длины всех рыб; при равенстве выигрывает тот, кто поймал больше рыб.
+        Итоговое место — по сумме мест за периоды.</p>
     </div>
 
     <div class="card">
@@ -143,22 +143,39 @@
       </div>
       <div class="field-row">
         <label>Команда (если есть)</label><select id="new-team-select"><option value="">— без команды —</option></select>
-        <label>Очерёдность старта</label><input id="new-start-order" type="number" style="max-width:100px">
-      </div>
-      <div class="field-row">
-        <label>Зона, 1 тур</label><select id="new-zone1"></select>
-        <label id="halfzone1-label" style="display:none">Полузона, 1 тур</label><select id="new-halfzone1" style="display:none"><option value="">—</option><option value="1">1</option><option value="2">2</option></select>
-        <label id="zone2-label">Зона, 2 тур</label><select id="new-zone2"></select>
-        <label id="halfzone2-label" style="display:none">Полузона, 2 тур</label><select id="new-halfzone2" style="display:none"><option value="">—</option><option value="1">1</option><option value="2">2</option></select>
       </div>
       <button class="primary" onclick="createEntry()">Зарегистрировать</button>
+      <p class="hint">Зона при регистрации не указывается: регистрация идёт до начала соревнования, когда жеребьёвки
+        ещё не было. Зоны назначаются потом — на вкладке «Жеребьёвка».</p>
     </div>
 
     <div class="card">
       <h2>Зарегистрированные спортсмены</h2>
       <table id="entries-table">
-        <thead><tr><th>№</th><th>ФИО</th><th>Разряд</th><th>Команда</th><th>Зона 1т</th><th id="hz1-th" style="display:none">Полузона 1т</th><th>Зона 2т</th><th id="hz2-th" style="display:none">Полузона 2т</th><th class="no-print"></th></tr></thead>
+        <thead><tr><th>№</th><th>ФИО</th><th>Разряд</th><th>Команда</th><th>Старт. №</th><th class="no-print"></th></tr></thead>
         <tbody></tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ЖЕРЕБЬЁВКА -->
+  <section id="tab-draw" style="display:none">
+    <div class="card">
+      <h2>Жеребьёвка — зоны по периодам</h2>
+      <p class="hint">Проводится ПОСЛЕ регистрации. У каждого периода своя зона: спортсмены переходят из зоны в зону
+        между периодами. Можно заполнить вручную (выпадающие списки в таблице сохраняются сразу) или нажать кнопку
+        автоматической жеребьёвки — она случайно разделит участников на группы и проведёт их по зонам с ротацией,
+        а заодно назначит стартовые номера.</p>
+      <div id="draw-block" class="no-print" style="display:none; margin-bottom:12px">
+        <button class="primary" onclick="runDraw()">🎲 Провести жеребьёвку автоматически</button>
+        <span class="hint">Перезапишет зоны во всех периодах и стартовые номера у ВСЕХ спортсменов. После этого
+          можно поправить отдельные строки вручную.</span>
+      </div>
+      <p class="hint" id="draw-autooff" style="display:none">Автоматическая жеребьёвка выключена в данных турнира —
+        заполните зоны вручную либо включите галочку «Автоматическая жеребьёвка» на вкладке «Регистрация».</p>
+      <table class="draw-table">
+        <thead><tr id="draw-head"></tr></thead>
+        <tbody id="draw-body"></tbody>
       </table>
     </div>
   </section>
@@ -169,7 +186,6 @@
       <h2>Печать личных карт спортсмена</h2>
       <p class="hint">Пустые бланки для печати перед началом соревнования — каждый спортсмен идёт на период со своей бумажной картой, куда судья и сам спортсмен вписывают и подписывают каждую пойманную рыбу. После периода данные с карты переносятся в программу на вкладке «Карты (периоды)».</p>
       <div class="field-row">
-        <label>Тур</label><select id="pc-tour"></select>
         <label>Период</label><select id="pc-period"></select>
         <label>Зона</label><select id="pc-zone"></select>
       </div>
@@ -194,7 +210,6 @@
   <section id="tab-cards" style="display:none">
     <div class="card">
       <div class="field-row">
-        <label>Тур</label><select id="card-tour" onchange="loadCardTab()"></select>
         <label>Период</label><select id="card-period" onchange="loadCardTab()"></select>
       </div>
       <p class="hint">Впишите длину каждой рыбы через пробел (как в бумажной личной карте спортсмена), например: 18 22.5 15 — и нажмите «Сохранить» в строке. Количество и сумма считаются автоматически.</p>
@@ -217,7 +232,12 @@
         <div id="ph-discipline"></div>
         <div style="display:flex; justify-content:space-between; padding:0 4px"><span id="ph-date"></span><span id="ph-venue"></span></div>
       </div>
+      <h3>Личный зачёт</h3>
       <div id="results-container"></div>
+      <div id="team-results-block" style="display:none">
+        <h3>Командный зачёт</h3>
+        <div id="team-results-container"></div>
+      </div>
       <div class="signatures" id="signatures" style="margin-top:28px; font-size:13px"></div>
     </div>
   </section>
@@ -228,16 +248,23 @@
       <h2>Расчёт спортивных разрядов и званий (ЕВСК)</h2>
       <p class="hint">
         Расчёт по нормативам Приложения № 61 к приказу Минспорта России. Учитывается: статус
-        соревнования (указывается выше), итоговое место, наличие улова (без улова — норматив не
-        засчитывается), уже имеющийся разряд спортсмена. Судейские категории программой не
-        проверяются — сверьте их самостоятельно по официальному тексту норм.
+        соревнования (указывается на вкладке «Регистрация»), итоговое место, наличие улова (без улова — норматив не
+        засчитывается), уже имеющийся разряд спортсмена. Разряд присваивается только если он ВЫШЕ имеющегося.
+        Судейские категории программой не проверяются — сверьте их самостоятельно по официальному тексту норм.
       </p>
       <div id="evsk-status" class="hint"></div>
+      <h3>Личный зачёт</h3>
       <table>
         <thead><tr><th>ФИО</th><th>Место</th><th>Имеющийся разряд</th><th>Присвоенный разряд</th><th>Примечание</th></tr></thead>
         <tbody id="evsk-individuals-body"></tbody>
       </table>
-      <p class="hint" id="evsk-teams-note"></p>
+      <div id="evsk-teams-block" style="display:none">
+        <h3>Командный зачёт</h3>
+        <table>
+          <thead><tr><th>Команда</th><th>ФИО</th><th>Место команды</th><th>Имеющийся разряд</th><th>Присвоенный разряд</th><th>Примечание</th></tr></thead>
+          <tbody id="evsk-teams-body"></tbody>
+        </table>
+      </div>
     </div>
   </section>
 
@@ -251,6 +278,7 @@
 let teamsCache = [];
 let athletesCache = [];
 let tournamentCache = {};
+let currentCache = {};
 
 function toast(msg, ok = true) {
   const el = document.getElementById("toast");
@@ -281,9 +309,10 @@ async function apiSend(method, url, payload) {
 
 function switchTab(tab) {
   document.querySelectorAll("nav button").forEach(b => b.classList.toggle("active", b.dataset.tab === tab));
-  ["reg","printcards","cards","results","evsk"].forEach(t => {
+  ["reg","draw","printcards","cards","results","evsk"].forEach(t => {
     document.getElementById("tab-" + t).style.display = (t === tab) ? "block" : "none";
   });
+  if (tab === "draw") loadDrawTab();
   if (tab === "cards") loadCardTab();
   if (tab === "results") loadResultsTab();
   if (tab === "printcards") { refreshPrintCardSelectors(); renderPrintCards(); }
@@ -294,11 +323,13 @@ document.querySelectorAll("nav button").forEach(b => b.onclick = () => switchTab
 function zoneList() {
   return (tournamentCache.zones || "А,Б,В").split(",").map(z => z.trim()).filter(Boolean);
 }
+function periodsCount() { return tournamentCache.periods_count || 3; }
 function fmtDate(iso) {
   if (!iso) return "";
   const [y,m,d] = iso.split("-");
   return d && m && y ? `${d}.${m}.${y}` : iso;
 }
+const MUNICIPAL_TIER = "Чемпионат муниципального образования";
 
 // ---------- Турнир ----------
 async function loadEvskTierOptions() {
@@ -311,19 +342,20 @@ async function loadEvskTierOptions() {
     sel.value = prev;
   } catch (e) { /* тихо */ }
 }
-function onHalfZonesToggle() {
-  const on = document.getElementById("t-half-zones").checked;
-  document.getElementById("halfzone1-label").style.display = on ? "" : "none";
-  document.getElementById("new-halfzone1").style.display = on ? "" : "none";
-  document.getElementById("halfzone2-label").style.display = on ? "" : "none";
-  document.getElementById("new-halfzone2").style.display = on ? "" : "none";
-  document.getElementById("hz1-th").style.display = on ? "" : "none";
-  document.getElementById("hz2-th").style.display = on ? "" : "none";
+// При выборе муниципального статуса весовой режим предлагается сам (правила
+// там другие — рыбу взвешивают), но судья может снять галочку вручную.
+function onTierChange() {
+  if (document.getElementById("t-evsk-tier").value === MUNICIPAL_TIER) {
+    document.getElementById("t-weight-mode").checked = true;
+  }
 }
+function onHalfZonesToggle() { /* полузоны показываются в таблице жеребьёвки */ }
+
 async function runDraw() {
-  if (!confirm("Заново случайно распределить зону/полузону на каждый тур и очерёдность старта у ВСЕХ спортсменов? Текущие значения будут перезаписаны.")) return;
+  if (!confirm("Заново случайно распределить зоны по всем периодам и стартовые номера у ВСЕХ спортсменов? Текущие значения будут перезаписаны.")) return;
   try {
     const r = await apiSend("POST", "/api/forel/draw", {});
+    await loadDrawTab();
     await loadEntries();
     toast(`Жеребьёвка проведена: ${r.count} спортсменов ✓`);
   } catch (e) { toast("Не удалось провести жеребьёвку: " + e.message, false); }
@@ -338,51 +370,103 @@ async function loadTournament() {
     document.getElementById("t-gender").value = t.gender_group || "";
     document.getElementById("t-venue").value = t.venue || "";
     document.getElementById("t-date1").value = t.date_tour1 || "";
-    document.getElementById("t-date2").value = t.date_tour2 || "";
-    document.getElementById("t-tours").value = t.tours_count || 2;
     document.getElementById("t-periods").value = t.periods_count || 3;
     document.getElementById("t-zones").value = t.zones || "А,Б,В";
     document.getElementById("t-evsk-tier").value = t.evsk_tier || "";
     document.getElementById("t-half-zones").checked = !!t.half_zones_enabled;
     document.getElementById("t-auto-draw").checked = !!t.auto_draw_enabled;
-    document.getElementById("draw-block").style.display = t.auto_draw_enabled ? "block" : "none";
-    onHalfZonesToggle();
-    document.getElementById("app-title").textContent = "🎣 " + (t.name_full || "Форель");
-    refreshZoneSelects();
+    document.getElementById("t-weight-mode").checked = !!currentCache.weight_mode;
+    document.getElementById("app-title").textContent = "🎣 " + (t.name_full || "Спиннинг с берега");
     refreshCardSelectors();
   } catch (e) { toast("Не удалось загрузить турнир: " + e.message, false); }
 }
 async function saveTournament() {
   try {
-    const autoDraw = document.getElementById("t-auto-draw").checked;
     await apiSend("POST", "/api/forel/tournament", {
       name_full: document.getElementById("t-name").value,
       status: document.getElementById("t-status").value,
       gender_group: document.getElementById("t-gender").value,
       venue: document.getElementById("t-venue").value,
       date_tour1: document.getElementById("t-date1").value,
-      date_tour2: document.getElementById("t-date2").value,
-      tours_count: document.getElementById("t-tours").value,
       periods_count: document.getElementById("t-periods").value,
       zones: document.getElementById("t-zones").value,
       evsk_tier: document.getElementById("t-evsk-tier").value,
       half_zones_enabled: document.getElementById("t-half-zones").checked,
-      auto_draw_enabled: autoDraw,
+      auto_draw_enabled: document.getElementById("t-auto-draw").checked,
     });
-    document.getElementById("draw-block").style.display = autoDraw ? "block" : "none";
+    // весовой режим меняет сам движок подсчёта — отдельным запросом
+    const wantWeight = document.getElementById("t-weight-mode").checked;
+    if (!!wantWeight !== !!currentCache.weight_mode) {
+      const r = await apiSend("POST", "/api/launcher/weight_mode", { enabled: wantWeight });
+      if (r.changed) {
+        toast("Способ подсчёта изменён — открываю нужный экран…");
+        setTimeout(() => { location.href = r.page; }, 800);
+        return;
+      }
+    }
     toast("Данные турнира сохранены ✓");
     await loadTournament();
-  } catch (e) { toast("Не сохранено: " + e.message, false); }
+  } catch (e) {
+    document.getElementById("t-weight-mode").checked = !!currentCache.weight_mode;
+    toast("Не сохранено: " + e.message, false);
+  }
 }
-function refreshZoneSelects() {
+
+// ---------- Жеребьёвка ----------
+async function loadDrawTab() {
+  let entries;
+  try { entries = await apiGet("/api/forel/entries"); }
+  catch (e) { toast("Не удалось загрузить список: " + e.message, false); return; }
+
+  const pc = periodsCount();
+  const half = !!tournamentCache.half_zones_enabled;
+  document.getElementById("draw-block").style.display = tournamentCache.auto_draw_enabled ? "block" : "none";
+  document.getElementById("draw-autooff").style.display = tournamentCache.auto_draw_enabled ? "none" : "block";
+
+  let head = `<th>№</th><th>ФИО</th><th>Команда</th><th>Старт. №</th>`;
+  for (let p = 1; p <= pc; p++) {
+    head += `<th>Зона, период ${p}</th>`;
+    if (half) head += `<th>Полузона ${p}</th>`;
+  }
+  document.getElementById("draw-head").innerHTML = head;
+
   const zones = zoneList();
-  const opts = zones.map(z => `<option value="${z}">${z}</option>`).join("");
-  document.getElementById("new-zone1").innerHTML = opts;
-  document.getElementById("new-zone2").innerHTML = opts;
-  document.getElementById("zone2-label").style.display = (tournamentCache.tours_count == 2) ? "" : "none";
-  document.getElementById("new-zone2").style.display = (tournamentCache.tours_count == 2) ? "" : "none";
-  document.getElementById("halfzone2-label").style.display = (tournamentCache.tours_count == 2 && tournamentCache.half_zones_enabled) ? "" : "none";
-  document.getElementById("new-halfzone2").style.display = (tournamentCache.tours_count == 2 && tournamentCache.half_zones_enabled) ? "" : "none";
+  const tbody = document.getElementById("draw-body");
+  tbody.innerHTML = "";
+  entries.forEach(e => {
+    const tr = document.createElement("tr");
+    let cells = `<td>${e.reg_number ?? ""}</td><td>${e.full_name}</td><td>${e.team_name || ""}</td>
+                 <td>${e.start_order ?? ""}</td>`;
+    for (let p = 1; p <= pc; p++) {
+      const cur = (e.zones || {})[String(p)] || "";
+      const opts = `<option value="">—</option>` +
+        zones.map(z => `<option value="${z}" ${z === cur ? "selected" : ""}>${z}</option>`).join("");
+      cells += `<td><select id="z-${e.id}-${p}" onchange="saveZone(${e.id}, ${p})">${opts}</select></td>`;
+      if (half) {
+        const curH = (e.half_zones || {})[String(p)] || "";
+        const hopts = ["", "1", "2"].map(h =>
+          `<option value="${h}" ${h === curH ? "selected" : ""}>${h || "—"}</option>`).join("");
+        cells += `<td><select id="h-${e.id}-${p}" onchange="saveZone(${e.id}, ${p})">${hopts}</select></td>`;
+      }
+    }
+    tr.innerHTML = cells;
+    tbody.appendChild(tr);
+  });
+  if (!entries.length) {
+    tbody.innerHTML = `<tr><td colspan="9" class="hint">Пока никто не зарегистрирован — сначала внесите спортсменов на вкладке «Регистрация».</td></tr>`;
+  }
+}
+// Зона и полузона одного периода сохраняются вместе — оба значения читаются
+// из своих полей по id, поэтому правка одного не затирает второе.
+async function saveZone(entryId, period) {
+  const zoneSel = document.getElementById(`z-${entryId}-${period}`);
+  const halfSel = document.getElementById(`h-${entryId}-${period}`);
+  const payload = { period_number: period, zone: zoneSel ? zoneSel.value : "" };
+  if (halfSel) payload.half_zone = halfSel.value;
+  try {
+    await apiSend("POST", `/api/forel/entries/${entryId}/zone`, payload);
+    toast("Зона сохранена ✓");
+  } catch (e) { toast("Не сохранено: " + e.message, false); }
 }
 
 // ---------- Разряды (ЕВСК) ----------
@@ -401,39 +485,31 @@ async function loadEvskTab() {
   const ib = document.getElementById("evsk-individuals-body");
   ib.innerHTML = "";
   data.individuals.forEach(r => ib.appendChild(evskRow([
-    r.full_name, r.place, r.current_rank, r.rank_label || "—", r.note,
+    r.full_name, fmtPlace(r.place), r.current_rank, r.rank_label || "—", r.note,
   ])));
-  document.getElementById("evsk-teams-note").textContent = data.teams_note || "";
+  const tb = document.getElementById("evsk-teams-body");
+  tb.innerHTML = "";
+  (data.teams || []).forEach(r => tb.appendChild(evskRow([
+    r.team_name, r.full_name, fmtPlace(r.place), r.current_rank, r.rank_label || "—", r.note,
+  ])));
+  document.getElementById("evsk-teams-block").style.display = (data.teams || []).length ? "block" : "none";
 }
 function refreshCardSelectors() {
-  const tourSel = document.getElementById("card-tour");
-  const toursCount = tournamentCache.tours_count || 2;
-  const prevTour = tourSel.value;
-  tourSel.innerHTML = Array.from({length: toursCount}, (_,i) => `<option value="${i+1}">${i+1}</option>`).join("");
-  if (prevTour && prevTour <= toursCount) tourSel.value = prevTour;
-
   const periodSel = document.getElementById("card-period");
-  const periodsCount = tournamentCache.periods_count || 3;
+  const pc = periodsCount();
   const prevPeriod = periodSel.value;
-  periodSel.innerHTML = Array.from({length: periodsCount}, (_,i) => `<option value="${i+1}">${i+1}</option>`).join("");
-  if (prevPeriod && prevPeriod <= periodsCount) periodSel.value = prevPeriod;
+  periodSel.innerHTML = Array.from({length: pc}, (_,i) => `<option value="${i+1}">${i+1}</option>`).join("");
+  if (prevPeriod && prevPeriod <= pc) periodSel.value = prevPeriod;
 }
 
 // ---------- Печать пустых карт ----------
 function refreshPrintCardSelectors() {
-  const toursCount = tournamentCache.tours_count || 2;
-  const periodsCount = tournamentCache.periods_count || 3;
-  const tourSel = document.getElementById("pc-tour");
-  const prevTour = tourSel.value;
-  tourSel.innerHTML = `<option value="0">Все туры</option>` +
-    Array.from({length: toursCount}, (_,i) => `<option value="${i+1}">Тур ${i+1}</option>`).join("");
-  tourSel.value = (prevTour && prevTour <= toursCount) ? prevTour : "0";
-
+  const pc = periodsCount();
   const periodSel = document.getElementById("pc-period");
   const prevPeriod = periodSel.value;
   periodSel.innerHTML = `<option value="0">Все периоды</option>` +
-    Array.from({length: periodsCount}, (_,i) => `<option value="${i+1}">Период ${i+1}</option>`).join("");
-  periodSel.value = (prevPeriod && prevPeriod <= periodsCount) ? prevPeriod : "0";
+    Array.from({length: pc}, (_,i) => `<option value="${i+1}">Период ${i+1}</option>`).join("");
+  periodSel.value = (prevPeriod && prevPeriod <= pc) ? prevPeriod : "0";
 
   const zoneSel = document.getElementById("pc-zone");
   const prevZone = zoneSel.value;
@@ -446,39 +522,30 @@ async function renderPrintCards() {
   try { entries = await apiGet("/api/forel/entries"); }
   catch (e) { toast("Не удалось загрузить список спортсменов: " + e.message, false); return; }
 
-  const toursCount = tournamentCache.tours_count || 2;
-  const periodsCount = tournamentCache.periods_count || 3;
-  const tourFilter = parseInt(document.getElementById("pc-tour").value || "0");
+  const pc = periodsCount();
   const periodFilter = parseInt(document.getElementById("pc-period").value || "0");
   const zoneFilter = document.getElementById("pc-zone").value || "";
   const rowsCount = Math.max(5, parseInt(document.getElementById("pc-rows").value || "30"));
+  const periods = periodFilter ? [periodFilter] : Array.from({length: pc}, (_,i) => i+1);
 
-  const tours = tourFilter ? [tourFilter] : Array.from({length: toursCount}, (_,i) => i+1);
-  const periods = periodFilter ? [periodFilter] : Array.from({length: periodsCount}, (_,i) => i+1);
-
-  // одна карта = один спортсмен + один тур + один период; сортировка по туру, зоне, очерёдности старта
+  // одна карта = один спортсмен + один период; сортировка по зоне этого
+  // периода, затем по стартовому номеру
   const cards = [];
-  tours.forEach(tn => {
-    const inZone = entries.filter(e => {
-      const z = tn === 1 ? e.zone_tour1 : e.zone_tour2;
+  periods.forEach(pn => {
+    entries.filter(e => {
+      const z = (e.zones || {})[String(pn)];
       if (!z) return false;
       if (zoneFilter && z !== zoneFilter) return false;
       return true;
     }).sort((a,b) => {
-      const za = (tn === 1 ? a.zone_tour1 : a.zone_tour2) || "";
-      const zb = (tn === 1 ? b.zone_tour1 : b.zone_tour2) || "";
+      const za = (a.zones || {})[String(pn)] || "", zb = (b.zones || {})[String(pn)] || "";
       if (za !== zb) return za < zb ? -1 : 1;
       const sa = a.start_order ?? a.reg_number ?? 0, sb = b.start_order ?? b.reg_number ?? 0;
       return sa - sb;
-    });
-    periods.forEach(pn => {
-      inZone.forEach(e => cards.push({ e, tn, pn }));
-    });
+    }).forEach(e => cards.push({ e, pn }));
   });
 
   const t = tournamentCache;
-  // одна карта = ОДИН физический лист А4, все rowsCount строк делятся ровно
-  // пополам на лицевую и оборотную сторону этого же листа (не два разных листа)
   const half1 = Math.ceil(rowsCount / 2);
   const half2 = rowsCount - half1;
   function rowsHtml(from, count) {
@@ -486,25 +553,24 @@ async function renderPrintCards() {
       `<tr><td class="pc-num">${from + i}</td><td></td><td class="pc-sign"></td><td class="pc-sign"></td></tr>`
     ).join("");
   }
-  function sideHead(e, tn, pn, zone, sideLabel) {
+  function sideHead(e, pn, zone, sideLabel) {
     return `
         <div class="pc-side-label">${sideLabel}</div>
         <div class="pc-title">Личная карта спортсмена</div>
         <div class="pc-tournament">${t.name_full || ""}${t.status ? " — " + t.status : ""}${t.venue ? ", " + t.venue : ""}</div>
         <div class="pc-fio">ФИО спортсмена: ${e.full_name}${e.rank_category ? " (" + e.rank_category + ")" : ""}${e.team_name ? ", команда «" + e.team_name + "»" : ""}</div>
         <div class="pc-meta">
-          <div>№ тура: <span>${tn}</span></div>
           <div>№ периода: <span>${pn}</span></div>
           <div>Зона: <span>${zone}</span></div>
           <div>№ рег.: <span>${e.reg_number ?? ""}</span></div>
         </div>`;
   }
 
-  const html = cards.map(({e, tn, pn}) => {
-    const zone = tn === 1 ? e.zone_tour1 : e.zone_tour2;
+  const html = cards.map(({e, pn}) => {
+    const zone = (e.zones || {})[String(pn)] || "";
     const front = `
       <div class="printpage">
-        ${sideHead(e, tn, pn, zone, "Лицевая сторона")}
+        ${sideHead(e, pn, zone, "Лицевая сторона")}
         <table class="card-table">
           <thead><tr><th>№</th><th>Длина рыбы, см</th><th>Подпись судьи</th><th>Подпись спортсмена</th></tr></thead>
           <tbody>${rowsHtml(1, half1)}</tbody>
@@ -512,7 +578,7 @@ async function renderPrintCards() {
       </div>`;
     const back = half2 > 0 ? `
       <div class="printpage">
-        ${sideHead(e, tn, pn, zone, "Оборотная сторона (продолжение)")}
+        ${sideHead(e, pn, zone, "Оборотная сторона (продолжение)")}
         <table class="card-table">
           <thead><tr><th>№</th><th>Длина рыбы, см</th><th>Подпись судьи</th><th>Подпись спортсмена</th></tr></thead>
           <tbody>${rowsHtml(half1 + 1, half2)}</tbody>
@@ -522,7 +588,7 @@ async function renderPrintCards() {
   }).join("");
 
   document.getElementById("printcards-container").innerHTML = html ||
-    `<div class="card"><p class="hint">Нет ни одного спортсмена с назначенной зоной для выбранного тура — проверьте вкладку «Регистрация».</p></div>`;
+    `<div class="card"><p class="hint">Нет ни одного спортсмена с назначенной зоной — сначала проведите жеребьёвку на вкладке «Жеребьёвка».</p></div>`;
 }
 
 // ---------- Судьи ----------
@@ -603,17 +669,11 @@ async function createEntry() {
       birth_date: document.getElementById("new-birth").value,
       reg_number: document.getElementById("new-regnum").value ? parseInt(document.getElementById("new-regnum").value) : null,
       team_id: document.getElementById("new-team-select").value || null,
-      start_order: document.getElementById("new-start-order").value ? parseInt(document.getElementById("new-start-order").value) : null,
-      zone_tour1: document.getElementById("new-zone1").value,
-      zone_tour2: document.getElementById("new-zone2").value,
-      half_zone_tour1: document.getElementById("new-halfzone1").value,
-      half_zone_tour2: document.getElementById("new-halfzone2").value,
     });
     document.getElementById("new-fio").value = "";
     document.getElementById("new-razryad").value = "";
     document.getElementById("new-birth").value = "";
     document.getElementById("new-regnum").value = "";
-    document.getElementById("new-start-order").value = "";
     await loadEntries();
     await loadAthletesCache();
     toast("Спортсмен зарегистрирован ✓");
@@ -630,14 +690,10 @@ async function loadEntries() {
   catch (e) { toast("Не удалось загрузить список: " + e.message, false); return; }
   const tbody = document.querySelector("#entries-table tbody");
   tbody.innerHTML = "";
-  const showHz = !!tournamentCache.half_zones_enabled;
   entries.forEach(e => {
     const tr = document.createElement("tr");
-    tr.innerHTML = `<td>${e.reg_number ?? ""}</td><td>${e.full_name}${e.rank_category ? ", " + e.rank_category : ""}</td>
-      <td>${e.rank_category || ""}</td><td>${e.team_name || ""}</td><td>${e.zone_tour1 || ""}</td>
-      <td style="display:${showHz ? "" : "none"}">${e.half_zone_tour1 || ""}</td>
-      <td>${e.zone_tour2 || ""}</td>
-      <td style="display:${showHz ? "" : "none"}">${e.half_zone_tour2 || ""}</td>
+    tr.innerHTML = `<td>${e.reg_number ?? ""}</td><td>${e.full_name}</td>
+      <td>${e.rank_category || ""}</td><td>${e.team_name || ""}</td><td>${e.start_order ?? ""}</td>
       <td class="no-print"><button class="link danger-link" onclick="deleteEntry(${e.id})">удалить</button></td>`;
     tbody.appendChild(tr);
   });
@@ -645,10 +701,9 @@ async function loadEntries() {
 
 // ---------- Карты (периоды) ----------
 async function loadCardTab() {
-  const tour = parseInt(document.getElementById("card-tour").value || "1");
   const period = parseInt(document.getElementById("card-period").value || "1");
   let rows;
-  try { rows = await apiGet(`/api/forel/card?tour_number=${tour}&period_number=${period}`); }
+  try { rows = await apiGet(`/api/forel/card?period_number=${period}`); }
   catch (e) { toast("Не удалось загрузить карты: " + e.message, false); return; }
   const tbody = document.getElementById("cards-table-body");
   tbody.innerHTML = "";
@@ -680,30 +735,27 @@ async function loadCardTab() {
   });
 }
 async function saveCard(entryId) {
-  const tour = parseInt(document.getElementById("card-tour").value);
   const period = parseInt(document.getElementById("card-period").value);
   const raw = document.getElementById(`len-${entryId}`).value.trim();
   const lengths = raw ? raw.split(/\s+/).map(Number).filter(n => !isNaN(n) && n > 0) : [];
   try {
-    await apiSend("POST", "/api/forel/card", { entry_id: entryId, tour_number: tour, period_number: period, lengths });
+    await apiSend("POST", "/api/forel/card", { entry_id: entryId, period_number: period, lengths });
     toast("Карта сохранена ✓");
   } catch (e) { toast("Не сохранено: " + e.message, false); }
 }
 async function disqualify(entryId) {
-  const tour = parseInt(document.getElementById("card-tour").value);
   const period = parseInt(document.getElementById("card-period").value);
-  if (!confirm(`Снять спортсмена с периода ${period} (и до конца тура)?`)) return;
+  if (!confirm(`Снять спортсмена с периода ${period} (и до конца соревнования)?`)) return;
   try {
-    await apiSend("POST", "/api/forel/sanctions", { entry_id: entryId, tour_number: tour, from_period: period, reason: "" });
+    await apiSend("POST", "/api/forel/sanctions", { entry_id: entryId, from_period: period, reason: "" });
     await loadCardTab();
     toast("Снятие зафиксировано ✓");
   } catch (e) { toast("Не удалось: " + e.message, false); }
 }
 async function clearSanction(entryId) {
-  const tour = parseInt(document.getElementById("card-tour").value);
-  if (!confirm("Отменить снятие для этого тура?")) return;
+  if (!confirm("Отменить снятие этого спортсмена?")) return;
   try {
-    await apiSend("DELETE", `/api/forel/entries/${entryId}/sanction/${tour}`);
+    await apiSend("DELETE", `/api/forel/entries/${entryId}/sanction`);
     await loadCardTab();
     toast("Снятие отменено ✓");
   } catch (e) { toast("Не удалось: " + e.message, false); }
@@ -733,44 +785,65 @@ async function loadResultsTab() {
   document.getElementById("ph-date").textContent = fmtDate(t.date_tour1);
   document.getElementById("ph-venue").textContent = t.venue || "";
 
-  const toursCount = t.tours_count || 2;
-  const periodsCount = t.periods_count || 3;
-  const container = document.getElementById("results-container");
+  const pc = results.periods_count || t.periods_count || 3;
 
-  let cols = ["Место", "№", "ФИО", "Разряд", "Команда"];
-  for (let tn = 1; tn <= toursCount; tn++) {
-    cols.push(`Тур ${tn}: зона`);
-    for (let p = 1; p <= periodsCount; p++) cols.push(`Т${tn} период ${p} (рыб/см)`);
-    cols.push(`Тур ${tn}: место`);
+  // Столбцы как в реальном протоколе: на каждый период — зона, рыб, баллы
+  // (сумма длины) и место; затем сумма мест и итоговое место.
+  let cols = ["Место", "№", "ФИО", "Разряд до", "Разряд после", "Команда"];
+  for (let p = 1; p <= pc; p++) {
+    cols.push(`Зона ${p}п`, `Рыб ${p}п`, `Баллы ${p}п`, `Место ${p}п`);
   }
-  if (toursCount > 1) cols.push("Итог. место");
+  cols.push("Сумма мест", "Всего рыб", "Сумма см", "Итоговое место");
 
   let html = `<table class="protocol-table"><thead><tr>${cols.map(c => `<th>${c}</th>`).join("")}</tr></thead><tbody>`;
-  results.forEach(r => {
+  results.individuals.forEach(r => {
     html += "<tr>";
     html += `<td class="${placeClass(r.final_place)}">${fmtPlace(r.final_place)}</td>`;
     html += `<td>${r.reg_number ?? ""}</td>`;
     html += `<td class="name-cell">${r.full_name}${r.sanction ? " <span class='badge'>снят</span>" : ""}</td>`;
-    html += `<td>${r.rank_category || ""}</td>`;
+    html += `<td>${r.rank_before || r.rank_category || ""}</td>`;
+    html += `<td${(r.rank_after && r.rank_after !== r.rank_before) ? ' class="place-1"' : ''}>${r.rank_after || r.rank_category || ""}</td>`;
     html += `<td>${r.team_name || ""}</td>`;
-    for (let tn = 1; tn <= toursCount; tn++) {
-      const tour = r.tours[String(tn)] || {};
-      html += `<td>${tour.zone || ""}</td>`;
-      const periodsByNum = {};
-      (tour.periods || []).forEach(p => periodsByNum[p.period_number] = p);
-      for (let p = 1; p <= periodsCount; p++) {
-        const pd = periodsByNum[p];
-        if (!pd) { html += `<td>—</td>`; continue; }
-        const text = pd.disqualified ? "снят" : `${pd.fish_count}/${pd.total_length}`;
-        html += `<td>${text}</td>`;
-      }
-      html += `<td class="${placeClass(tour.tour_place)}">${fmtPlace(tour.tour_place)}</td>`;
+    const byNum = {};
+    (r.periods || []).forEach(p => byNum[p.period_number] = p);
+    for (let p = 1; p <= pc; p++) {
+      const pd = byNum[p];
+      if (!pd) { html += `<td>—</td><td>—</td><td>—</td><td>—</td>`; continue; }
+      html += `<td>${pd.zone || ""}${pd.half_zone ? "/" + pd.half_zone : ""}</td>`;
+      html += `<td>${pd.fish_count}</td>`;
+      html += `<td>${pd.disqualified ? "снят" : pd.total_length}</td>`;
+      html += `<td>${fmtPlace(pd.period_place)}</td>`;
     }
-    if (toursCount > 1) html += `<td class="${placeClass(r.final_place)}">${fmtPlace(r.final_place)}</td>`;
+    html += `<td>${fmtPlace(r.sum_period_places)}</td>`;
+    html += `<td>${r.sum_fish ?? ""}</td>`;
+    html += `<td>${r.sum_length ?? ""}</td>`;
+    html += `<td class="${placeClass(r.final_place)}">${fmtPlace(r.final_place)}</td>`;
     html += "</tr>";
   });
   html += "</tbody></table>";
-  container.innerHTML = html;
+  document.getElementById("results-container").innerHTML = html;
+
+  // Командный зачёт
+  const teams = results.teams || [];
+  document.getElementById("team-results-block").style.display = teams.length ? "block" : "none";
+  if (teams.length) {
+    let th = `<table class="protocol-table"><thead><tr>
+      <th>Место</th><th>Команда</th><th>Состав</th><th>Сумма мест</th><th>Рыб</th><th>Сумма см</th>
+      </tr></thead><tbody>`;
+    teams.forEach(tm => {
+      const names = tm.members.map(m => `${m.full_name} (${fmtPlace(m.final_place)})`).join(", ");
+      th += `<tr>
+        <td class="${placeClass(tm.team_place)}">${fmtPlace(tm.team_place)}</td>
+        <td class="name-cell">${tm.name}</td>
+        <td class="name-cell">${names}</td>
+        <td>${fmtPlace(tm.team_sum_places)}</td>
+        <td>${tm.team_sum_fish ?? ""}</td>
+        <td>${tm.team_sum_length ?? ""}</td>
+      </tr>`;
+    });
+    th += "</tbody></table>";
+    document.getElementById("team-results-container").innerHTML = th;
+  }
 
   const sigDiv = document.getElementById("signatures");
   sigDiv.innerHTML = judges.map(j => `
@@ -789,6 +862,9 @@ async function loadResultsTab() {
     location.href = "launcher.html";
     return;
   }
+  currentCache = current;
+  // турнир этой дисциплины в ВЕСОВОМ режиме ведётся другим экраном
+  if (current.weight_mode) { location.href = "zone_weight.html"; return; }
   try {
     const info = await apiGet("/api/info");
     if (info && info.db_path) document.getElementById("diag").textContent = "Файл базы данных турнира: " + info.db_path;

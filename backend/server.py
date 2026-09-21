@@ -179,9 +179,60 @@ def _run_zone_draw(conn):
     conn.commit()
     return len(entry_ids)
 
+
+def _run_forel_draw(conn):
+    """Жеребьёвка для «Ловли спиннингом с берега» (v8): туров нет, зона
+    назначается НА КАЖДЫЙ ПЕРИОД, причём с РОТАЦИЕЙ — спортсмены переходят
+    из зоны в зону между периодами (так это и делается на реальных
+    соревнованиях, и так устроен реальный протокол: "Зона 1пер", "Зона
+    2пер", "Зона 3пер" у одного человека разные).
+
+    Как считается: участники случайно делятся на N примерно равных групп
+    (N = число зон); в периоде p группа i уходит в зону с номером
+    (i + p - 1) mod N. Это гарантирует и равномерность в каждом периоде, и
+    то, что одна и та же группа не сидит всё соревнование в одной зоне.
+    Ручная правка отдельных записей после жеребьёвки остаётся доступной."""
+    t = conn.execute("SELECT * FROM tournament WHERE id=1").fetchone()
+    zones = [z.strip() for z in (t["zones"] or "").split(",") if z.strip()]
+    if not zones:
+        raise ApiError("не заданы зоны турнира — заполните список зон в общих данных")
+    periods_count = t["periods_count"]
+    half_enabled = bool(t["half_zones_enabled"])
+
+    entry_ids = [r["id"] for r in conn.execute("SELECT id FROM entries").fetchall()]
+    if not entry_ids:
+        return 0
+
+    shuffled = entry_ids[:]
+    random.shuffle(shuffled)
+    for i, eid in enumerate(shuffled, start=1):
+        conn.execute("UPDATE entries SET start_order=? WHERE id=?", (i, eid))
+
+    # деление на группы по числу зон (группа = те, кто вместе кочует по зонам)
+    groups = [[] for _ in zones]
+    for i, eid in enumerate(shuffled):
+        groups[i % len(zones)].append(eid)
+
+    for p in range(1, periods_count + 1):
+        for gi, members in enumerate(groups):
+            zone = zones[(gi + p - 1) % len(zones)]
+            members = members[:]
+            random.shuffle(members)
+            for i, eid in enumerate(members):
+                half = ("1" if i % 2 == 0 else "2") if half_enabled else None
+                conn.execute(
+                    "INSERT INTO entry_zones (entry_id, period_number, zone, half_zone) VALUES (?,?,?,?) "
+                    "ON CONFLICT(entry_id, period_number) DO UPDATE SET zone=excluded.zone, "
+                    "half_zone=excluded.half_zone",
+                    (eid, p, zone, half),
+                )
+    conn.commit()
+    return len(entry_ids)
+
 # Открытый сейчас турнир (одна программа = один активный турнир одновременно,
 # как и было решено: один ноутбук, одна база). Меняется через /api/launcher/open.
-CURRENT = {"id": None, "slug": None, "discipline_code": None, "name_full": None, "db_path": None}
+CURRENT = {"id": None, "slug": None, "discipline_code": None, "name_full": None, "db_path": None,
+           "weight_mode": 0}
 
 
 class ApiError(Exception):
@@ -205,6 +256,11 @@ def init_registry():
     conn = registry_db()
     with open(SCHEMA_REGISTRY_PATH, encoding="utf-8") as f:
         conn.executescript(f.read())
+    # v8: реестр, созданный прежней версией, не знает про weight_mode —
+    # CREATE TABLE IF NOT EXISTS столбец не добавит, поэтому добавляем явно.
+    cols = {r[1] for r in conn.execute("PRAGMA table_info(tournaments)").fetchall()}
+    if "weight_mode" not in cols:
+        conn.execute("ALTER TABLE tournaments ADD COLUMN weight_mode INTEGER NOT NULL DEFAULT 0")
     conn.commit()
     conn.close()
 
@@ -256,10 +312,29 @@ def migrate_legacy_if_needed():
     print(f"[миграция] найден старый файл лодки.sqlite (версия v1-v3) — перенесён в {new_dir} как турнир #{tid}")
 
 
-def init_tournament_db(db_path, discipline_code, name_full, venue, date_tour1):
+def init_tournament_db(db_path, discipline_code, name_full, venue, date_tour1, weight_mode=0):
     os.makedirs(os.path.dirname(db_path), exist_ok=True)
     conn = sqlite3.connect(db_path, timeout=10)
     conn.execute("PRAGMA foreign_keys = ON")
+    # v8: «спиннинг с берега» в весовом режиме считается зонно-весовым движком
+    # (правила муниципальных соревнований — один в один как в донке).
+    if discipline_code == "forel" and weight_mode:
+        with open(SCHEMA_ZONE_WEIGHT_PATH, encoding="utf-8") as f:
+            conn.executescript(f.read())
+        row = conn.execute("SELECT id FROM tournament WHERE id = 1").fetchone()
+        if row is None:
+            conn.execute(
+                "INSERT INTO tournament (id, name_full, venue, date_tour1, discipline) VALUES (1, ?, ?, ?, ?)",
+                (name_full, venue or "", date_tour1 or "", DISCIPLINES["forel"]["name"]),
+            )
+        else:
+            conn.execute(
+                "UPDATE tournament SET name_full=?, venue=?, date_tour1=?, discipline=? WHERE id=1",
+                (name_full, venue or "", date_tour1 or "", DISCIPLINES["forel"]["name"]),
+            )
+        conn.commit()
+        conn.close()
+        return
     if discipline_code == "lodki":
         with open(SCHEMA_LODKI_PATH, encoding="utf-8") as f:
             conn.executescript(f.read())
@@ -317,6 +392,103 @@ def init_tournament_db(db_path, discipline_code, name_full, venue, date_tour1):
     conn.close()
 
 
+def _evsk_rank_after(evsk_data, key_fn):
+    """Словарь {ключ: разряд ПОСЛЕ турнира} по результату расчёта ЕВСК —
+    для столбца «Разряд после» в протоколе (в реальных протоколах он есть
+    рядом с «Разряд до»).
+
+    Берётся ЛУЧШИЙ из личного и командного нормативов. Если нового разряда
+    нет (в том числе когда имеющийся просто подтверждён) — ключа в словаре
+    не будет, и «разряд после» останется равным «разряду до»."""
+    best = {}
+    for r in list(evsk_data.get("individuals", [])) + list(evsk_data.get("teams", [])):
+        label = r.get("app_label")
+        if not label:
+            continue
+        key = key_fn(r)
+        if key is None:
+            continue
+        if key not in best or evsk.ladder_index(label) > evsk.ladder_index(best[key]):
+            best[key] = label
+    return best
+
+
+def _discipline_page(discipline_code, weight_mode=0):
+    """Какая страница интерфейса ведёт этот турнир. Отдельная функция, чтобы
+    правило жило в одном месте: «спиннинг с берега» в весовом режиме ведётся
+    экраном зонно-весового движка (правила как в донке)."""
+    if discipline_code == "forel":
+        return "zone_weight.html" if weight_mode else "forel.html"
+    if discipline_code == "lodki":
+        return "lodki.html"
+    if discipline_code in ZONE_WEIGHT_DISCIPLINES:
+        return "zone_weight.html"
+    return "stub.html"
+
+
+def _migrate_forel_to_periods(db_path):
+    """v8: приводит турнир «спиннинга с берега», заведённый прежней версией
+    (туры + одна зона на весь тур), к новой структуре — только периоды, зона
+    на КАЖДЫЙ период.
+
+    Что сохраняется: всё, что было в 1-м туре — его зона ставится всем
+    периодам, его карты (пойманные рыбы) и снятие переносятся как есть.
+    Данные 2-го тура отбрасываются: туров в дисциплине больше нет вообще
+    (прямое указание пользователя — «тур будет всегда один, его можно убрать
+    вообще, оставляем только периоды»). Регистрация, судьи, команды и
+    спортсмены не затрагиваются."""
+    if not os.path.exists(db_path):
+        return
+    conn = sqlite3.connect(db_path, timeout=10)
+    conn.row_factory = sqlite3.Row
+    try:
+        cols = {r[1] for r in conn.execute("PRAGMA table_info(entry_zones)").fetchall()}
+        if not cols or "tour_number" not in cols:
+            return  # уже новая структура
+        t = conn.execute("SELECT * FROM tournament WHERE id=1").fetchone()
+        t = dict(t) if t else {}
+        periods_count = t.get("periods_count") or 3
+        zones_old = conn.execute("SELECT * FROM entry_zones WHERE tour_number=1").fetchall()
+        catches_old = conn.execute("SELECT * FROM catches WHERE tour_number=1").fetchall()
+        sanc_old = conn.execute("SELECT * FROM sanctions WHERE tour_number=1").fetchall()
+
+        for v in ("v_period_totals", "v_period_places", "v_tour_totals", "v_tour_zone_place",
+                  "v_tour_overall_place", "v_final_place", "v_entry_totals",
+                  "v_team_totals", "v_team_final"):
+            conn.execute("DROP VIEW IF EXISTS " + v)
+        for tbl in ("entry_zones", "catches", "sanctions", "tournament"):
+            conn.execute("DROP TABLE IF EXISTS " + tbl)
+        with open(SCHEMA_FOREL_PATH, encoding="utf-8") as f:
+            conn.executescript(f.read())
+
+        conn.execute(
+            "INSERT INTO tournament (id, name_full, status, venue, date_tour1, date_tour2, discipline, "
+            "gender_group, periods_count, zones, evsk_tier, half_zones_enabled, auto_draw_enabled) "
+            "VALUES (1,?,?,?,?,'',?,?,?,?,?,?,?)",
+            (t.get("name_full", ""), t.get("status", ""), t.get("venue", ""), t.get("date_tour1", ""),
+             t.get("discipline") or DISCIPLINES["forel"]["name"], t.get("gender_group", ""),
+             periods_count, t.get("zones") or "А,Б,В", t.get("evsk_tier", ""),
+             t.get("half_zones_enabled", 0), t.get("auto_draw_enabled", 0)),
+        )
+        for z in zones_old:      # зона 1-го тура -> всем периодам
+            for p in range(1, periods_count + 1):
+                conn.execute(
+                    "INSERT OR REPLACE INTO entry_zones (entry_id, period_number, zone, half_zone) VALUES (?,?,?,?)",
+                    (z["entry_id"], p, z["zone"], z["half_zone"] if "half_zone" in z.keys() else None),
+                )
+        for c in catches_old:
+            conn.execute("INSERT INTO catches (entry_id, period_number, length_cm) VALUES (?,?,?)",
+                         (c["entry_id"], c["period_number"], c["length_cm"]))
+        for s in sanc_old:
+            conn.execute("INSERT OR REPLACE INTO sanctions (entry_id, from_period, reason) VALUES (?,?,?)",
+                         (s["entry_id"], s["from_period"], s["reason"] if "reason" in s.keys() else ""))
+        conn.commit()
+        print("[миграция] турнир «спиннинг с берега» переведён на структуру без туров "
+              "(зоны по периодам): " + db_path)
+    finally:
+        conn.close()
+
+
 def require_current():
     if not CURRENT["db_path"]:
         raise ApiError("нет открытого турнира — откройте или создайте турнир в лаунчере", status=409)
@@ -349,6 +521,12 @@ def require_current_forel():
             + "» пока в разработке — регистрация и подсчёт для форели готовы, для этой дисциплины ещё нет",
             status=409,
         )
+    if CURRENT.get("weight_mode"):
+        raise ApiError(
+            "у этого турнира включён подсчёт ПО ВЕСУ (правила как в донке) — "
+            "он ведётся на другом экране; вернитесь в список турниров и откройте турнир заново",
+            status=409,
+        )
 
 
 def get_forel_db():
@@ -362,6 +540,10 @@ def get_forel_db():
 
 def require_current_zw():
     require_current()
+    # v8: «спиннинг с берега» с включённым весовым режимом считается этим же
+    # движком (правила муниципальных соревнований — как в донке).
+    if CURRENT["discipline_code"] == "forel" and CURRENT.get("weight_mode"):
+        return
     if CURRENT["discipline_code"] not in ZONE_WEIGHT_DISCIPLINES:
         raise ApiError(
             "модуль дисциплины «" + DISCIPLINES.get(CURRENT["discipline_code"], {}).get("name", CURRENT["discipline_code"])
@@ -445,6 +627,7 @@ class Handler(http.server.SimpleHTTPRequestHandler):
                     disc = DISCIPLINES.get(d["discipline_code"], {})
                     d["discipline_name"] = disc.get("name", d["discipline_code"])
                     d["implemented"] = disc.get("implemented", False)
+                    d["page"] = _discipline_page(d["discipline_code"], d.get("weight_mode"))
                     result.append(d)
                 return self._send_json(result)
             finally:
@@ -455,7 +638,9 @@ class Handler(http.server.SimpleHTTPRequestHandler):
                 return self._send_json({})
             disc = DISCIPLINES.get(CURRENT["discipline_code"], {})
             return self._send_json({**CURRENT, "implemented": disc.get("implemented", False),
-                                     "discipline_name": disc.get("name", CURRENT["discipline_code"])})
+                                     "discipline_name": disc.get("name", CURRENT["discipline_code"]),
+                                     "page": _discipline_page(CURRENT["discipline_code"],
+                                                              CURRENT.get("weight_mode"))})
 
         # ---------- Модуль «Форель» ----------
         if path.startswith("/api/forel/"):
@@ -520,6 +705,10 @@ class Handler(http.server.SimpleHTTPRequestHandler):
                     "COALESCE(team_id, 999999999), pair_index_in_team, pair_place"
                 ).fetchall()
                 teams = {t["team_id"]: dict(t) for t in conn.execute("SELECT * FROM v_team_results").fetchall()}
+                # «Разряд до» / «Разряд после»: у лодок разряд считается на
+                # каждого спортсмена пары отдельно, поэтому ключ — пара + ФИО
+                rank_after = _evsk_rank_after(self._lodki_build_evsk(conn),
+                                              lambda r: (r.get("entry_id"), r.get("full_name")))
                 result = []
                 for p in pairs:
                     pd = dict(p)
@@ -529,7 +718,13 @@ class Handler(http.server.SimpleHTTPRequestHandler):
                         "WHERE em.entry_id = ? ORDER BY em.slot_order",
                         (pd["entry_id"],),
                     ).fetchall()
-                    pd["members"] = [dict(m) for m in members]
+                    pd["members"] = []
+                    for m in members:
+                        md = dict(m)
+                        md["rank_before"] = md.get("rank_category") or ""
+                        md["rank_after"] = rank_after.get((pd["entry_id"], md["full_name"]),
+                                                          md.get("rank_category") or "")
+                        pd["members"].append(md)
                     pd["team"] = teams.get(pd["team_id"])
                     result.append(pd)
                 return self._send_json(result)
@@ -604,9 +799,9 @@ class Handler(http.server.SimpleHTTPRequestHandler):
                         individual_place=worst_pair_place, individual_field_size=field_size,
                     )
                     teams.append({
-                        "team_id": tid, "team_name": tm["name"], "pair_name": p["entry_name"],
-                        "full_name": m["full_name"], "current_rank": m["rank_category"],
-                        "place": tf["final_place"], **r,
+                        "entry_id": p["entry_id"], "team_id": tid, "team_name": tm["name"],
+                        "pair_name": p["entry_name"], "full_name": m["full_name"],
+                        "current_rank": m["rank_category"], "place": tf["final_place"], **r,
                     })
         return {"individuals": individuals, "teams": teams, "tier": tier, "field_size": field_size}
 
@@ -638,11 +833,14 @@ class Handler(http.server.SimpleHTTPRequestHandler):
                 raise ApiError("неизвестная дисциплина: " + str(discipline_code))
             venue = data.get("venue", "")
             date_tour1 = data.get("date_tour1", "")
+            # v8: весовой режим имеет смысл только для «спиннинга с берега»
+            weight_mode = 1 if (discipline_code == "forel" and data.get("weight_mode")) else 0
 
             conn = registry_db()
             cur = conn.execute(
-                "INSERT INTO tournaments (slug, name_full, discipline_code, venue, date_tour1) VALUES (?,?,?,?,?)",
-                ("__pending__", name_full, discipline_code, venue, date_tour1),
+                "INSERT INTO tournaments (slug, name_full, discipline_code, venue, date_tour1, weight_mode) "
+                "VALUES (?,?,?,?,?,?)",
+                ("__pending__", name_full, discipline_code, venue, date_tour1, weight_mode),
             )
             tid = cur.lastrowid
             slug = tournament_slug(tid)
@@ -650,8 +848,44 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             conn.commit()
             conn.close()
 
-            init_tournament_db(tournament_db_path(slug), discipline_code, name_full, venue, date_tour1)
-            return self._send_json({"ok": True, "id": tid, "slug": slug})
+            init_tournament_db(tournament_db_path(slug), discipline_code, name_full, venue, date_tour1,
+                               weight_mode=weight_mode)
+            return self._send_json({"ok": True, "id": tid, "slug": slug, "weight_mode": weight_mode})
+
+        if path == "/api/launcher/weight_mode":
+            # v8: переключение «подсчёт по длине» <-> «подсчёт по весу (как в
+            # донке)» для открытого турнира «спиннинга с берега». Движки
+            # хранят данные по-разному, поэтому переключение возможно только
+            # пока в турнире ещё нет участников — иначе результаты пришлось
+            # бы выдумывать. Программа честно об этом говорит.
+            require_current()
+            if CURRENT["discipline_code"] != "forel":
+                raise ApiError("подсчёт по весу переключается только у дисциплины «Ловля спиннингом с берега»")
+            want = 1 if data.get("enabled") else 0
+            if want == (CURRENT.get("weight_mode") or 0):
+                return self._send_json({"ok": True, "weight_mode": want, "changed": False})
+            db_path = CURRENT["db_path"]
+            if os.path.exists(db_path):
+                c = sqlite3.connect(db_path, timeout=10)
+                try:
+                    n = c.execute("SELECT COUNT(*) FROM entries").fetchone()[0]
+                finally:
+                    c.close()
+                if n:
+                    raise ApiError(
+                        "нельзя переключить способ подсчёта: в турнире уже зарегистрированы участники (%d). "
+                        "Удалите их или создайте отдельный турнир с нужным способом подсчёта." % n)
+                os.remove(db_path)
+            conn = registry_db()
+            conn.execute("UPDATE tournaments SET weight_mode=? WHERE id=?", (want, CURRENT["id"]))
+            row = conn.execute("SELECT * FROM tournaments WHERE id=?", (CURRENT["id"],)).fetchone()
+            conn.commit()
+            conn.close()
+            init_tournament_db(db_path, "forel", row["name_full"], row["venue"], row["date_tour1"],
+                               weight_mode=want)
+            CURRENT["weight_mode"] = want
+            return self._send_json({"ok": True, "weight_mode": want, "changed": True,
+                                    "page": "zone_weight.html" if want else "forel.html"})
 
         if path == "/api/launcher/open":
             tid = data.get("id")
@@ -665,9 +899,15 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             CURRENT["discipline_code"] = row["discipline_code"]
             CURRENT["name_full"] = row["name_full"]
             CURRENT["db_path"] = tournament_db_path(row["slug"])
+            CURRENT["weight_mode"] = row["weight_mode"] if "weight_mode" in row.keys() else 0
             disc = DISCIPLINES.get(row["discipline_code"], {})
+            # v8: турнир «спиннинга с берега», заведённый прежней версией
+            # (туры + зона на тур), приводится к новой структуре при открытии.
+            if row["discipline_code"] == "forel" and not CURRENT["weight_mode"]:
+                _migrate_forel_to_periods(CURRENT["db_path"])
             return self._send_json({**CURRENT, "implemented": disc.get("implemented", False),
-                                     "discipline_name": disc.get("name", row["discipline_code"])})
+                                     "discipline_name": disc.get("name", row["discipline_code"]),
+                                     "page": _discipline_page(row["discipline_code"], CURRENT["weight_mode"])})
 
         # ---------- Модуль «Форель» ----------
         if path.startswith("/api/forel/"):
@@ -868,35 +1108,31 @@ class Handler(http.server.SimpleHTTPRequestHandler):
 
             if path == "/api/forel/entries":
                 entries = self._forel_entries_query(conn)
-                zones = {(z["entry_id"], z["tour_number"]): z["zone"]
-                         for z in conn.execute("SELECT * FROM entry_zones").fetchall()}
-                halves = {(z["entry_id"], z["tour_number"]): z["half_zone"]
-                          for z in conn.execute("SELECT * FROM entry_zones").fetchall()}
+                zrows = conn.execute("SELECT * FROM entry_zones").fetchall()
+                zones = {(z["entry_id"], z["period_number"]): z["zone"] for z in zrows}
+                halves = {(z["entry_id"], z["period_number"]): z["half_zone"] for z in zrows}
                 sanc = {s["entry_id"]: dict(s) for s in conn.execute("SELECT * FROM sanctions").fetchall()}
                 result = []
                 for e in entries:
                     d = self._forel_entry_row(conn, e)
-                    d["zone_tour1"] = zones.get((e["id"], 1))
-                    d["zone_tour2"] = zones.get((e["id"], 2))
-                    d["half_zone_tour1"] = halves.get((e["id"], 1))
-                    d["half_zone_tour2"] = halves.get((e["id"], 2))
+                    # зоны по периодам (v8): {"1": "А", "2": "Б", ...}
+                    d["zones"] = {str(p): zones.get((e["id"], p)) for p in range(1, 5)}
+                    d["half_zones"] = {str(p): halves.get((e["id"], p)) for p in range(1, 5)}
                     d["sanction"] = sanc.get(e["id"])
                     result.append(d)
                 return self._send_json(result)
 
             if path.startswith("/api/forel/card"):
                 q = parse_qs(urlparse(self.path).query)
-                tour_number = int(q.get("tour_number", ["1"])[0])
                 period_number = int(q.get("period_number", ["1"])[0])
                 entries = self._forel_entries_query(conn)
                 zones = {z["entry_id"]: z["zone"] for z in
-                          conn.execute("SELECT * FROM entry_zones WHERE tour_number = ?", (tour_number,)).fetchall()}
+                          conn.execute("SELECT * FROM entry_zones WHERE period_number = ?", (period_number,)).fetchall()}
                 sanc = {s["entry_id"]: s["from_period"] for s in
-                        conn.execute("SELECT * FROM sanctions WHERE tour_number = ?", (tour_number,)).fetchall()}
+                        conn.execute("SELECT * FROM sanctions").fetchall()}
                 catches = {}
                 for c in conn.execute(
-                    "SELECT * FROM catches WHERE tour_number = ? AND period_number = ? ORDER BY id",
-                    (tour_number, period_number),
+                    "SELECT * FROM catches WHERE period_number = ? ORDER BY id", (period_number,)
                 ).fetchall():
                     catches.setdefault(c["entry_id"], []).append(c["length_cm"])
                 result = []
@@ -921,47 +1157,62 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             conn.close()
 
     def _forel_build_results(self, conn):
+        """Протокол (v8): туров нет — только периоды. У каждого периода своя
+        зона, своё количество рыб, своя сумма длины и своё место в зоне.
+        Дополнительно возвращается командный зачёт (листы «Команда» и
+        «Командно-Личный» реального протокола)."""
         tournament = conn.execute("SELECT * FROM tournament WHERE id = 1").fetchone()
-        tours_count = tournament["tours_count"] if tournament else 2
+        periods_count = tournament["periods_count"] if tournament else 3
         entries = self._forel_entries_query(conn)
 
-        period_rows = conn.execute("SELECT * FROM v_period_places").fetchall()
-        periods_by_entry_tour = {}
-        for p in period_rows:
-            periods_by_entry_tour.setdefault((p["entry_id"], p["tour_number"]), []).append(dict(p))
+        periods_by_entry = {}
+        for p in conn.execute("SELECT * FROM v_period_places").fetchall():
+            periods_by_entry.setdefault(p["entry_id"], []).append(dict(p))
 
-        tour_rows = {(t["entry_id"], t["tour_number"]): dict(t)
-                     for t in conn.execute("SELECT * FROM v_tour_overall_place").fetchall()}
         final_rows = {f["entry_id"]: dict(f) for f in conn.execute("SELECT * FROM v_final_place").fetchall()}
+        # «Разряд до» / «Разряд после» — как в реальном протоколе
+        rank_after = _evsk_rank_after(self._forel_build_evsk(conn), lambda r: r.get("entry_id"))
 
-        result = []
+        individuals = []
         for e in entries:
             d = self._forel_entry_row(conn, e)
-            d["tours"] = {}
-            for tn in range(1, tours_count + 1):
-                periods = sorted(periods_by_entry_tour.get((e["id"], tn), []), key=lambda p: p["period_number"])
-                tour = tour_rows.get((e["id"], tn))
-                d["tours"][str(tn)] = {
-                    "zone": tour["zone"] if tour else None,
-                    "periods": [{"period_number": p["period_number"], "fish_count": p["fish_count"],
-                                 "total_length": p["total_length"], "disqualified": bool(p["disqualified"]),
-                                 "period_place": p["period_place"]} for p in periods],
-                    "sum_period_places": tour["sum_period_places"] if tour else None,
-                    "sum_length": tour["sum_length"] if tour else None,
-                    "sum_fish": tour["sum_fish"] if tour else None,
-                    "zone_place": tour["zone_place"] if tour else None,
-                    "tour_place": tour["tour_place"] if tour else None,
-                }
+            d["rank_before"] = e["rank_category"] or ""
+            d["rank_after"] = rank_after.get(e["id"], e["rank_category"] or "")
+            periods = sorted(periods_by_entry.get(e["id"], []), key=lambda p: p["period_number"])
+            d["periods"] = [{
+                "period_number": p["period_number"], "zone": p["zone"], "half_zone": p["half_zone"],
+                "fish_count": p["fish_count"], "total_length": p["total_length"],
+                "disqualified": bool(p["disqualified"]), "period_place": p["period_place"],
+            } for p in periods]
             final = final_rows.get(e["id"])
-            if tours_count == 2:
-                d["final_place"] = final["final_place"] if final else None
-            else:
-                t1 = d["tours"].get("1", {})
-                d["final_place"] = t1.get("tour_place")
-            result.append(d)
+            d["sum_period_places"] = final["sum_period_places"] if final else None
+            d["sum_length"] = final["sum_length"] if final else None
+            d["sum_fish"] = final["sum_fish"] if final else None
+            d["final_place"] = final["final_place"] if final else None
+            individuals.append(d)
 
-        result.sort(key=lambda d: (d["final_place"] is None, d["final_place"] if d["final_place"] is not None else 0))
-        return result
+        individuals.sort(key=lambda d: (d["final_place"] is None,
+                                        d["final_place"] if d["final_place"] is not None else 0))
+
+        teams_meta = {t["id"]: dict(t) for t in conn.execute("SELECT * FROM teams").fetchall()}
+        members = {}
+        for d in individuals:
+            if d.get("team_id"):
+                members.setdefault(d["team_id"], []).append(d)
+        teams = []
+        for tr in conn.execute("SELECT * FROM v_team_final ORDER BY team_place").fetchall():
+            meta = teams_meta.get(tr["team_id"], {})
+            teams.append({
+                "team_id": tr["team_id"], "name": meta.get("name", ""), "region": meta.get("region", ""),
+                "members_count": tr["members_count"], "team_sum_places": tr["team_sum_places"],
+                "team_sum_length": tr["team_sum_length"], "team_sum_fish": tr["team_sum_fish"],
+                "team_place": tr["team_place"],
+                "members": [{"entry_id": m["id"], "full_name": m["full_name"],
+                             "sum_period_places": m["sum_period_places"],
+                             "final_place": m["final_place"]} for m in members.get(tr["team_id"], [])],
+            })
+
+        return {"individuals": individuals, "teams": teams, "periods_count": periods_count}
 
     def _forel_build_evsk(self, conn):
         t = conn.execute("SELECT * FROM tournament WHERE id=1").fetchone()
@@ -978,7 +1229,7 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             final = final_rows.get(e["id"])
             if not final:
                 continue
-            has_catch = (final.get("sum_length_all") or 0) > 0
+            has_catch = (final.get("sum_length") or 0) > 0
             age = evsk.age_from_birth_date(e["birth_date"], year)
             r = evsk.compute_entry_rank(
                 EVSK_STANDARDS, discipline_key="forel", is_team=False, gender=gender,
@@ -991,27 +1242,51 @@ class Handler(http.server.SimpleHTTPRequestHandler):
                 "place": final["final_place"], **r,
             })
 
-        # Командные разряды для «Форели» НЕ рассчитываются: у этой дисциплины
-        # в программе нет командного протокола/зачёта вообще (team_id —
-        # только пометка регистрации, без своего рейтинга команд) — рассчитать
-        # "место команды" для норматива было бы просто выдумкой без опоры на
-        # реальный протокол. Сознательное ограничение v7.
-        return {"individuals": individuals, "teams": [], "tier": tier, "field_size": field_size,
-                "teams_note": "командные нормативы для «Форели» не рассчитываются — "
-                              "у дисциплины нет командного протокола в программе"}
+        # Командные нормативы (v8): у дисциплины ЕСТЬ командный зачёт — это
+        # видно в реальном протоколе (листы «Команда» и «Командно-Личный»),
+        # поэтому заглушка v7 («командных разрядов нет») снята.
+        teams = []
+        team_rows = {tm["id"]: dict(tm) for tm in conn.execute("SELECT * FROM teams").fetchall()}
+        team_final = {f["team_id"]: dict(f) for f in conn.execute("SELECT * FROM v_team_final").fetchall()}
+        by_team = {}
+        for e in entries:
+            if e["team_id"]:
+                by_team.setdefault(e["team_id"], []).append(e)
+        for tid, members_e in by_team.items():
+            tm, tf = team_rows.get(tid), team_final.get(tid)
+            if not tm or not tf:
+                continue
+            has_catch = (tf.get("team_sum_length") or 0) > 0
+            for e in members_e:
+                own = final_rows.get(e["id"])
+                age = evsk.age_from_birth_date(e["birth_date"], year)
+                r = evsk.compute_entry_rank(
+                    EVSK_STANDARDS, discipline_key="forel", is_team=True, gender=gender,
+                    tier_text=tier, competitor_count=len(team_rows), place=tf["team_place"],
+                    has_catch=has_catch, current_rank_label=e["rank_category"], age=age,
+                    individual_place=(own["final_place"] if own else None),
+                    individual_field_size=field_size,
+                    field_quality_ok_for_i=field_quality_ok,
+                )
+                teams.append({
+                    "entry_id": e["id"], "team_id": tid, "team_name": tm["name"],
+                    "full_name": e["full_name"], "current_rank": e["rank_category"],
+                    "place": tf["team_place"], **r,
+                })
+        return {"individuals": individuals, "teams": teams, "tier": tier, "field_size": field_size}
 
     def _handle_forel_post(self, path, data):
         conn = get_forel_db()
         try:
             if path == "/api/forel/tournament":
                 conn.execute(
-                    "UPDATE tournament SET name_full=?, status=?, venue=?, date_tour1=?, date_tour2=?, "
-                    "gender_group=?, tours_count=?, periods_count=?, zones=?, evsk_tier=?, "
+                    "UPDATE tournament SET name_full=?, status=?, venue=?, date_tour1=?, "
+                    "gender_group=?, periods_count=?, zones=?, evsk_tier=?, "
                     "half_zones_enabled=?, auto_draw_enabled=? WHERE id=1",
                     (
                         data.get("name_full", ""), data.get("status", ""), data.get("venue", ""),
-                        data.get("date_tour1", ""), data.get("date_tour2", ""), data.get("gender_group", ""),
-                        int(data.get("tours_count", 2)), int(data.get("periods_count", 3)),
+                        data.get("date_tour1", ""), data.get("gender_group", ""),
+                        int(data.get("periods_count", 3)),
                         data.get("zones", "А,Б,В"), data.get("evsk_tier", ""),
                         1 if data.get("half_zones_enabled") else 0,
                         1 if data.get("auto_draw_enabled") else 0,
@@ -1057,64 +1332,58 @@ class Handler(http.server.SimpleHTTPRequestHandler):
                     (data.get("reg_number"), athlete_id, team_id, data.get("start_order")),
                 )
                 entry_id = cur.lastrowid
-                for tn, zkey, hkey in ((1, "zone_tour1", "half_zone_tour1"), (2, "zone_tour2", "half_zone_tour2")):
-                    zone = (data.get(zkey) or "").strip()
-                    if zone:
-                        conn.execute(
-                            "INSERT INTO entry_zones (entry_id, tour_number, zone, half_zone) VALUES (?, ?, ?, ?)",
-                            (entry_id, tn, zone, (data.get(hkey) or "").strip() or None),
-                        )
+                # v8: при РЕГИСТРАЦИИ зона не вводится вообще — жеребьёвки ещё
+                # не было (регистрация идёт до начала соревнования). Зоны
+                # назначаются позже, на вкладке «Жеребьёвка».
                 conn.commit()
                 return self._send_json({"ok": True, "id": entry_id})
 
             if path.startswith("/api/forel/entries/") and path.endswith("/zone"):
                 entry_id = int(path.split("/")[4])
-                tour_number = int(data.get("tour_number", 1))
+                period_number = int(data.get("period_number", 1))
                 zone = (data.get("zone") or "").strip()
                 half_zone = (data.get("half_zone") or "").strip() or None
                 if not zone:
-                    conn.execute("DELETE FROM entry_zones WHERE entry_id=? AND tour_number=?", (entry_id, tour_number))
+                    conn.execute("DELETE FROM entry_zones WHERE entry_id=? AND period_number=?",
+                                 (entry_id, period_number))
                 else:
                     conn.execute(
-                        "INSERT INTO entry_zones (entry_id, tour_number, zone, half_zone) VALUES (?,?,?,?) "
-                        "ON CONFLICT(entry_id, tour_number) DO UPDATE SET zone=excluded.zone, half_zone=excluded.half_zone",
-                        (entry_id, tour_number, zone, half_zone),
+                        "INSERT INTO entry_zones (entry_id, period_number, zone, half_zone) VALUES (?,?,?,?) "
+                        "ON CONFLICT(entry_id, period_number) DO UPDATE SET zone=excluded.zone, "
+                        "half_zone=excluded.half_zone",
+                        (entry_id, period_number, zone, half_zone),
                     )
                 conn.commit()
                 return self._send_json({"ok": True})
 
             if path == "/api/forel/card":
                 entry_id = int(data["entry_id"])
-                tour_number = int(data["tour_number"])
                 period_number = int(data["period_number"])
                 lengths = data.get("lengths", [])
-                conn.execute(
-                    "DELETE FROM catches WHERE entry_id=? AND tour_number=? AND period_number=?",
-                    (entry_id, tour_number, period_number),
-                )
+                conn.execute("DELETE FROM catches WHERE entry_id=? AND period_number=?",
+                             (entry_id, period_number))
                 for L in lengths:
                     L = float(L)
                     if L > 0:
                         conn.execute(
-                            "INSERT INTO catches (entry_id, tour_number, period_number, length_cm) VALUES (?,?,?,?)",
-                            (entry_id, tour_number, period_number, L),
+                            "INSERT INTO catches (entry_id, period_number, length_cm) VALUES (?,?,?)",
+                            (entry_id, period_number, L),
                         )
                 conn.commit()
                 return self._send_json({"ok": True})
 
             if path == "/api/forel/draw":
-                count = _run_zone_draw(conn)
+                count = _run_forel_draw(conn)
                 return self._send_json({"ok": True, "count": count})
 
             if path == "/api/forel/sanctions":
                 entry_id = int(data["entry_id"])
-                tour_number = int(data["tour_number"])
                 from_period = int(data["from_period"])
                 conn.execute(
-                    "INSERT INTO sanctions (entry_id, tour_number, from_period, reason) VALUES (?,?,?,?) "
-                    "ON CONFLICT(entry_id, tour_number) DO UPDATE SET from_period=excluded.from_period, "
+                    "INSERT INTO sanctions (entry_id, from_period, reason) VALUES (?,?,?) "
+                    "ON CONFLICT(entry_id) DO UPDATE SET from_period=excluded.from_period, "
                     "reason=excluded.reason",
-                    (entry_id, tour_number, from_period, data.get("reason", "")),
+                    (entry_id, from_period, data.get("reason", "")),
                 )
                 conn.commit()
                 return self._send_json({"ok": True})
@@ -1126,10 +1395,9 @@ class Handler(http.server.SimpleHTTPRequestHandler):
     def _handle_forel_delete(self, path):
         conn = get_forel_db()
         try:
-            if path.startswith("/api/forel/entries/") and "/sanction/" in path:
-                parts = path.split("/")
-                entry_id, tour_number = int(parts[4]), int(parts[6])
-                conn.execute("DELETE FROM sanctions WHERE entry_id=? AND tour_number=?", (entry_id, tour_number))
+            if path.startswith("/api/forel/entries/") and "/sanction" in path:
+                entry_id = int(path.split("/")[4])
+                conn.execute("DELETE FROM sanctions WHERE entry_id=?", (entry_id,))
                 conn.commit()
                 return self._send_json({"ok": True})
             if path.startswith("/api/forel/entries/"):
@@ -1245,10 +1513,14 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         zone_rows = {(z["entry_id"], z["tour_number"]): dict(z)
                      for z in conn.execute("SELECT * FROM v_zone_places").fetchall()}
         final_rows = {f["entry_id"]: dict(f) for f in conn.execute("SELECT * FROM v_individual_final").fetchall()}
+        # «Разряд до» / «Разряд после» — как в реальном протоколе
+        rank_after = _evsk_rank_after(self._zw_build_evsk(conn), lambda r: r.get("entry_id"))
 
         individuals = []
         for e in entries:
             d = self._zw_entry_row(e)
+            d["rank_before"] = e["rank_category"] or ""
+            d["rank_after"] = rank_after.get(e["id"], e["rank_category"] or "")
             d["tours"] = {}
             for tn in range(1, tours_count + 1):
                 z = zone_rows.get((e["id"], tn))
@@ -1344,8 +1616,9 @@ class Handler(http.server.SimpleHTTPRequestHandler):
                     field_quality_ok_for_i=field_quality_ok,
                 )
                 teams.append({
-                    "team_id": tid, "team_name": tm["name"], "full_name": e["full_name"],
-                    "current_rank": e["rank_category"], "place": tf["final_place"], **r,
+                    "entry_id": e["id"], "team_id": tid, "team_name": tm["name"],
+                    "full_name": e["full_name"], "current_rank": e["rank_category"],
+                    "place": tf["final_place"], **r,
                 })
         return {"individuals": individuals, "teams": teams, "tier": tier, "field_size": field_size}
 

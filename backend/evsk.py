@@ -95,6 +95,13 @@ def _ladder_index(label):
         return 0
 
 
+def ladder_index(label):
+    """Публичный вариант _ladder_index: насколько высок разряд (больше —
+    выше). Нужен серверу, чтобы выбрать лучший из личного и командного
+    нормативов для столбца «разряд после»."""
+    return _ladder_index(label)
+
+
 def load_standards(path):
     with open(path, encoding="utf-8") as f:
         return json.load(f)
@@ -142,10 +149,12 @@ def compute_entry_rank(standards, *, discipline_key, is_team, gender, tier_text,
     """Возвращает dict {rank, rank_label, tier_used, note} для достигнутого
     норматива, либо {rank: None, note: "..."} если ничего не выполнено."""
     if not has_catch:
-        return {"rank": None, "rank_label": None, "note": "без улова — норматив не засчитывается"}
+        return {"rank": None, "rank_label": None, "app_label": None, "confirmed": False,
+                "note": "без улова — норматив не засчитывается"}
     ti = tier_index(tier_text)
     if ti is None:
-        return {"rank": None, "rank_label": None, "note": "статус соревнования не указан — расчёт невозможен"}
+        return {"rank": None, "rank_label": None, "app_label": None, "confirmed": False,
+                "note": "статус соревнования не указан — расчёт невозможен"}
 
     def team_fraction_ok(rank_code):
         if not is_team or individual_place is None or individual_field_size is None:
@@ -201,9 +210,21 @@ def compute_entry_rank(standards, *, discipline_key, is_team, gender, tier_text,
         elif rank_code == "I":
             if not field_quality_ok_for_i:
                 continue
-        return {"rank": rank_code, "rank_label": RANK_DISPLAY[rank_code], "tier_used": row["tier"], "note": ""}
+        # Разряд присваивается, только если он ВЫШЕ уже имеющегося у спортсмена.
+        # Иначе новый разряд не присваивается, а ИМЕЮЩИЙСЯ ПОДТВЕРЖДАЕТСЯ: КМС,
+        # выполнивший норматив I разряда, остаётся КМС (в v7 программа ошибочно
+        # "понижала" такого спортсмена до I/II).
+        if _ladder_index(RANK_TO_APP_LABEL[rank_code]) <= cur_idx:
+            return {
+                "rank": None, "rank_label": None, "app_label": None, "confirmed": True,
+                "note": "норматив выполнен, разряд подтверждён",
+            }
+        return {"rank": rank_code, "rank_label": RANK_DISPLAY[rank_code],
+                "app_label": RANK_TO_APP_LABEL[rank_code], "confirmed": False,
+                "tier_used": row["tier"], "note": ""}
 
-    return {"rank": None, "rank_label": None, "note": "результат не соответствует ни одному нормативу"}
+    return {"rank": None, "rank_label": None, "app_label": None, "confirmed": False,
+            "note": "результат не соответствует ни одному нормативу"}
 
 
 def field_quality_ok_for_i_razryad(rank_labels):

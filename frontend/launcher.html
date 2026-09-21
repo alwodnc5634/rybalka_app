@@ -27,6 +27,7 @@
   .field-row label { font-size: 13px; color: #555; min-width: 140px; }
   .field-row input, .field-row select { flex: 1; min-width: 160px; }
   .empty-hint { color: #888; font-size: 13px; padding: 12px 0; }
+  .hint { color: #888; font-size: 12px; }
   #toast { position: fixed; bottom: 20px; right: 20px; padding: 12px 18px; border-radius: 8px;
     font-size: 14px; color: white; box-shadow: 0 2px 10px rgba(0,0,0,0.2); display: none; z-index: 999; max-width: 360px; }
   #toast.ok { background: #2e7d32; }
@@ -57,7 +58,12 @@
       <label>Название</label><input id="new-name" style="flex:2" placeholder="напр. Чемпионат Вологодской области">
     </div>
     <div class="field-row">
-      <label>Дисциплина</label><select id="new-discipline"></select>
+      <label>Дисциплина</label><select id="new-discipline" onchange="onDisciplineChange()"></select>
+    </div>
+    <div class="field-row" id="weight-mode-row" style="display:none">
+      <label><input type="checkbox" id="new-weight-mode" style="width:auto"> Подсчёт по весу (правила как в донке)</label>
+      <span class="hint" style="margin:0">для соревнований муниципального уровня: рыбу не измеряют, а взвешивают —
+        туры, зона на тур, периодов нет</span>
     </div>
     <div class="field-row">
       <label>Место проведения</label><input id="new-venue">
@@ -121,9 +127,10 @@ async function loadTournaments() {
   list.forEach(t => {
     const tr = document.createElement("tr");
     const badge = t.implemented ? "" : `<span class="badge dev">в разработке</span>`;
+    const wm = t.weight_mode ? ` <span class="hint">(подсчёт по весу)</span>` : "";
     tr.innerHTML = `
       <td>${t.name_full}</td>
-      <td>${t.discipline_name}${badge}</td>
+      <td>${t.discipline_name}${badge}${wm}</td>
       <td>${t.venue || ""}</td>
       <td>${fmtDate(t.date_tour1)}</td>
       <td style="text-align:right; white-space:nowrap">
@@ -140,10 +147,19 @@ const DISCIPLINE_PAGES = {
   blesna: "zone_weight.html", mormyshka: "zone_weight.html",
 };
 
+// Галочка «подсчёт по весу» имеет смысл только у спиннинга с берега.
+function onDisciplineChange() {
+  const isForel = document.getElementById("new-discipline").value === "forel";
+  document.getElementById("weight-mode-row").style.display = isForel ? "" : "none";
+  if (!isForel) document.getElementById("new-weight-mode").checked = false;
+}
+
 async function openTournament(id) {
   try {
     const cur = await apiSend("POST", "/api/launcher/open", { id });
-    location.href = DISCIPLINE_PAGES[cur.discipline_code] || (cur.implemented ? "lodki.html" : "stub.html");
+    // сервер сам говорит, каким экраном ведётся турнир (учитывает весовой режим)
+    location.href = cur.page || DISCIPLINE_PAGES[cur.discipline_code] ||
+                    (cur.implemented ? "lodki.html" : "stub.html");
   } catch (e) { toast("Не удалось открыть турнир: " + e.message, false); }
 }
 
@@ -153,8 +169,10 @@ async function createTournament() {
   const discipline_code = document.getElementById("new-discipline").value;
   const venue = document.getElementById("new-venue").value.trim();
   const date_tour1 = document.getElementById("new-date").value;
+  const weight_mode = document.getElementById("new-weight-mode").checked;
   try {
-    const created = await apiSend("POST", "/api/launcher/tournaments", { name_full, discipline_code, venue, date_tour1 });
+    const created = await apiSend("POST", "/api/launcher/tournaments",
+                                  { name_full, discipline_code, venue, date_tour1, weight_mode });
     await openTournament(created.id);
   } catch (e) { toast("Не удалось создать турнир: " + e.message, false); }
 }
@@ -178,6 +196,7 @@ async function loadDiag() {
 (async function init() {
   loadDiag();
   await loadDisciplines();
+  onDisciplineChange();
   await loadTournaments();
 })();
 </script>

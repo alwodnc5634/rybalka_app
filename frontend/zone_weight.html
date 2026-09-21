@@ -578,7 +578,7 @@ async function loadResultsTab() {
   const toursCount = t.tours_count || 2;
 
   // --- личный зачёт ---
-  let cols = ["Место", "№", "ФИО", "Разряд", "Команда"];
+  let cols = ["Место", "№", "ФИО", "Разряд до", "Разряд после", "Команда"];
   for (let tn = 1; tn <= toursCount; tn++) {
     cols.push(`Тур ${tn}: зона`, `Тур ${tn}: вес`, `Тур ${tn}: место в зоне`);
   }
@@ -590,7 +590,8 @@ async function loadResultsTab() {
     html += `<td class="${placeClass(r.final_place)}">${fmtPlace(r.final_place)}</td>`;
     html += `<td>${r.reg_number ?? ""}</td>`;
     html += `<td class="name-cell">${r.full_name}</td>`;
-    html += `<td>${r.rank_category || ""}</td>`;
+    html += `<td>${r.rank_before || r.rank_category || ""}</td>`;
+    html += `<td${(r.rank_after && r.rank_after !== r.rank_before) ? ' class="place-1"' : ''}>${r.rank_after || r.rank_category || ""}</td>`;
     html += `<td>${r.team_name || ""}</td>`;
     for (let tn = 1; tn <= toursCount; tn++) {
       const tour = r.tours[String(tn)] || {};
@@ -645,8 +646,11 @@ async function loadResultsTab() {
 (async function init() {
   let current;
   try { current = await apiGet("/api/launcher/current"); } catch (e) { current = null; }
+  // «Ловля спиннингом с берега» с включённым весовым режимом тоже ведётся
+  // этим экраном: правила там один в один как в донке.
   const zwCodes = ["donka", "poplavok", "blesna", "mormyshka"];
-  if (!current || !current.id || !zwCodes.includes(current.discipline_code)) {
+  const isForelWeight = current && current.discipline_code === "forel" && current.weight_mode;
+  if (!current || !current.id || !(zwCodes.includes(current.discipline_code) || isForelWeight)) {
     location.href = "launcher.html";
     return;
   }
