@@ -2350,7 +2350,7 @@
   "age_max": null,
   "place_min": 4,
   "place_max": 8,
-  "min_competitors": null
+  "min_competitors": 20
  },
  {
   "rank": "I",
@@ -2363,7 +2363,7 @@
   "age_max": null,
   "place_min": 4,
   "place_max": 8,
-  "min_competitors": null
+  "min_competitors": 20
  },
  {
   "rank": "I",
@@ -2376,7 +2376,7 @@
   "age_max": null,
   "place_min": 3,
   "place_max": 3,
-  "min_competitors": null
+  "min_competitors": 8
  },
  {
   "rank": "I",
@@ -2389,7 +2389,7 @@
   "age_max": null,
   "place_min": 8,
   "place_max": 10,
-  "min_competitors": null
+  "min_competitors": 30
  },
  {
   "rank": "I",
@@ -2402,7 +2402,7 @@
   "age_max": null,
   "place_min": 8,
   "place_max": 10,
-  "min_competitors": null
+  "min_competitors": 30
  },
  {
   "rank": "I",
@@ -2415,7 +2415,7 @@
   "age_max": null,
   "place_min": 8,
   "place_max": 10,
-  "min_competitors": null
+  "min_competitors": 30
  },
  {
   "rank": "I",
@@ -2428,7 +2428,7 @@
   "age_max": null,
   "place_min": 5,
   "place_max": 6,
-  "min_competitors": null
+  "min_competitors": 15
  },
  {
   "rank": "I",
@@ -2441,7 +2441,7 @@
   "age_max": null,
   "place_min": 5,
   "place_max": 6,
-  "min_competitors": null
+  "min_competitors": 15
  },
  {
   "rank": "I",
@@ -2454,7 +2454,7 @@
   "age_max": null,
   "place_min": 5,
   "place_max": 6,
-  "min_competitors": null
+  "min_competitors": 15
  },
  {
   "rank": "I",
@@ -2467,7 +2467,7 @@
   "age_max": null,
   "place_min": 8,
   "place_max": 10,
-  "min_competitors": null
+  "min_competitors": 30
  },
  {
   "rank": "I",
@@ -2480,7 +2480,7 @@
   "age_max": null,
   "place_min": 8,
   "place_max": 10,
-  "min_competitors": null
+  "min_competitors": 30
  },
  {
   "rank": "I",
@@ -2493,7 +2493,7 @@
   "age_max": null,
   "place_min": 5,
   "place_max": 5,
-  "min_competitors": null
+  "min_competitors": 10
  },
  {
   "rank": "I",
@@ -2506,7 +2506,7 @@
   "age_max": null,
   "place_min": 5,
   "place_max": 5,
-  "min_competitors": null
+  "min_competitors": 10
  },
  {
   "rank": "I",
@@ -2519,7 +2519,7 @@
   "age_max": null,
   "place_min": 5,
   "place_max": 5,
-  "min_competitors": null
+  "min_competitors": 10
  },
  {
   "rank": "I",
@@ -2532,7 +2532,7 @@
   "age_max": null,
   "place_min": 4,
   "place_max": 4,
-  "min_competitors": null
+  "min_competitors": 8
  },
  {
   "rank": "I",
@@ -2545,7 +2545,7 @@
   "age_max": null,
   "place_min": 4,
   "place_max": 4,
-  "min_competitors": null
+  "min_competitors": 8
  },
  {
   "rank": "I",
@@ -2558,7 +2558,7 @@
   "age_max": null,
   "place_min": 4,
   "place_max": 4,
-  "min_competitors": null
+  "min_competitors": 8
  },
  {
   "rank": "I",
@@ -2571,7 +2571,7 @@
   "age_max": null,
   "place_min": 5,
   "place_max": 5,
-  "min_competitors": null
+  "min_competitors": 10
  },
  {
   "rank": "I",
@@ -2584,7 +2584,7 @@
   "age_max": null,
   "place_min": 5,
   "place_max": 5,
-  "min_competitors": null
+  "min_competitors": 10
  },
  {
   "rank": "I",
@@ -2597,7 +2597,7 @@
   "age_max": null,
   "place_min": 5,
   "place_max": 7,
-  "min_competitors": null
+  "min_competitors": 16
  },
  {
   "rank": "I",
@@ -2610,7 +2610,7 @@
   "age_max": null,
   "place_min": 4,
   "place_max": 5,
-  "min_competitors": null
+  "min_competitors": 10
  },
  {
   "rank": "I",
@@ -2623,7 +2623,7 @@
   "age_max": null,
   "place_min": 4,
   "place_max": 5,
-  "min_competitors": null
+  "min_competitors": 15
  },
  {
   "rank": "I",
@@ -2636,7 +2636,7 @@
   "age_max": null,
   "place_min": 4,
   "place_max": 5,
-  "min_competitors": null
+  "min_competitors": 15
  },
  {
   "rank": "I",
@@ -2649,7 +2649,7 @@
   "age_max": null,
   "place_min": 3,
   "place_max": 3,
-  "min_competitors": null
+  "min_competitors": 8
  },
  {
   "rank": "I",
@@ -2662,7 +2662,7 @@
   "age_max": null,
   "place_min": 7,
   "place_max": 9,
-  "min_competitors": null
+  "min_competitors": 20
  },
  {
   "rank": "I",
@@ -2675,7 +2675,7 @@
   "age_max": null,
   "place_min": 7,
   "place_max": 9,
-  "min_competitors": null
+  "min_competitors": 20
  },
  {
   "rank": "I",
@@ -2688,7 +2688,7 @@
   "age_max": null,
   "place_min": 7,
   "place_max": 9,
-  "min_competitors": null
+  "min_competitors": 20
  },
  {
   "rank": "I",
@@ -2701,7 +2701,7 @@
   "age_max": null,
   "place_min": 4,
   "place_max": 5,
-  "min_competitors": null
+  "min_competitors": 15
  },
  {
   "rank": "I",
@@ -2714,7 +2714,7 @@
   "age_max": null,
   "place_min": 4,
   "place_max": 5,
-  "min_competitors": null
+  "min_competitors": 15
  },
  {
   "rank": "I",
@@ -2727,7 +2727,7 @@
   "age_max": null,
   "place_min": 4,
   "place_max": 5,
-  "min_competitors": null
+  "min_competitors": 15
  },
  {
   "rank": "I",
@@ -2740,7 +2740,7 @@
   "age_max": null,
   "place_min": 7,
   "place_max": 9,
-  "min_competitors": null
+  "min_competitors": 20
  },
  {
   "rank": "I",
@@ -2753,7 +2753,7 @@
   "age_max": null,
   "place_min": 7,
   "place_max": 9,
-  "min_competitors": null
+  "min_competitors": 20
  },
  {
   "rank": "I",
@@ -2766,7 +2766,7 @@
   "age_max": null,
   "place_min": 4,
   "place_max": 5,
-  "min_competitors": null
+  "min_competitors": 10
  },
  {
   "rank": "I",
@@ -2779,7 +2779,7 @@
   "age_max": null,
   "place_min": 4,
   "place_max": 5,
-  "min_competitors": null
+  "min_competitors": 10
  },
  {
   "rank": "I",
@@ -2792,7 +2792,7 @@
   "age_max": null,
   "place_min": 4,
   "place_max": 5,
-  "min_competitors": null
+  "min_competitors": 10
  },
  {
   "rank": "I",
@@ -2805,7 +2805,7 @@
   "age_max": null,
   "place_min": 3,
   "place_max": 4,
-  "min_competitors": null
+  "min_competitors": 8
  },
  {
   "rank": "I",
@@ -2818,7 +2818,7 @@
   "age_max": null,
   "place_min": 3,
   "place_max": 4,
-  "min_competitors": null
+  "min_competitors": 8
  },
  {
   "rank": "I",
@@ -2831,7 +2831,7 @@
   "age_max": null,
   "place_min": 3,
   "place_max": 4,
-  "min_competitors": null
+  "min_competitors": 8
  },
  {
   "rank": "I",
@@ -2844,7 +2844,7 @@
   "age_max": null,
   "place_min": 3,
   "place_max": 4,
-  "min_competitors": null
+  "min_competitors": 10
  },
  {
   "rank": "I",
@@ -2857,7 +2857,7 @@
   "age_max": null,
   "place_min": 3,
   "place_max": 4,
-  "min_competitors": null
+  "min_competitors": 10
  },
  {
   "rank": "I",
@@ -2870,7 +2870,7 @@
   "age_max": null,
   "place_min": 3,
   "place_max": 4,
-  "min_competitors": null
+  "min_competitors": 10
  },
  {
   "rank": "I",
@@ -2883,7 +2883,7 @@
   "age_max": null,
   "place_min": 1,
   "place_max": 6,
-  "min_competitors": null
+  "min_competitors": 15
  },
  {
   "rank": "I",
@@ -2896,7 +2896,7 @@
   "age_max": null,
   "place_min": 1,
   "place_max": 6,
-  "min_competitors": null
+  "min_competitors": 15
  },
  {
   "rank": "I",
@@ -2909,7 +2909,7 @@
   "age_max": null,
   "place_min": 1,
   "place_max": 6,
-  "min_competitors": null
+  "min_competitors": 15
  },
  {
   "rank": "II",
@@ -2922,7 +2922,7 @@
   "age_max": null,
   "place_min": 7,
   "place_max": 9,
-  "min_competitors": null
+  "min_competitors": 15
  },
  {
   "rank": "II",
@@ -2935,7 +2935,7 @@
   "age_max": null,
   "place_min": 7,
   "place_max": 9,
-  "min_competitors": null
+  "min_competitors": 15
  },
  {
   "rank": "II",
@@ -2948,7 +2948,7 @@
   "age_max": null,
   "place_min": 7,
   "place_max": 9,
-  "min_competitors": null
+  "min_competitors": 15
  },
  {
   "rank": "I",
@@ -2961,7 +2961,7 @@
   "age_max": null,
   "place_min": 1,
   "place_max": 5,
-  "min_competitors": null
+  "min_competitors": 10
  },
  {
   "rank": "I",
@@ -2974,7 +2974,7 @@
   "age_max": null,
   "place_min": 1,
   "place_max": 5,
-  "min_competitors": null
+  "min_competitors": 10
  },
  {
   "rank": "I",
@@ -2987,7 +2987,7 @@
   "age_max": null,
   "place_min": 1,
   "place_max": 5,
-  "min_competitors": null
+  "min_competitors": 10
  },
  {
   "rank": "II",
@@ -3000,7 +3000,7 @@
   "age_max": null,
   "place_min": 6,
   "place_max": 7,
-  "min_competitors": null
+  "min_competitors": 10
  },
  {
   "rank": "II",
@@ -3013,7 +3013,7 @@
   "age_max": null,
   "place_min": 6,
   "place_max": 7,
-  "min_competitors": null
+  "min_competitors": 10
  },
  {
   "rank": "II",
@@ -3026,7 +3026,7 @@
   "age_max": null,
   "place_min": 6,
   "place_max": 7,
-  "min_competitors": null
+  "min_competitors": 10
  },
  {
   "rank": "I",
@@ -3039,7 +3039,7 @@
   "age_max": null,
   "place_min": 1,
   "place_max": 6,
-  "min_competitors": null
+  "min_competitors": 15
  },
  {
   "rank": "I",
@@ -3052,7 +3052,7 @@
   "age_max": null,
   "place_min": 1,
   "place_max": 6,
-  "min_competitors": null
+  "min_competitors": 15
  },
  {
   "rank": "II",
@@ -3065,7 +3065,7 @@
   "age_max": null,
   "place_min": 7,
   "place_max": 9,
-  "min_competitors": null
+  "min_competitors": 15
  },
  {
   "rank": "II",
@@ -3078,7 +3078,7 @@
   "age_max": null,
   "place_min": 7,
   "place_max": 9,
-  "min_competitors": null
+  "min_competitors": 15
  },
  {
   "rank": "I",
@@ -3091,7 +3091,7 @@
   "age_max": null,
   "place_min": 1,
   "place_max": 3,
-  "min_competitors": null
+  "min_competitors": 10
  },
  {
   "rank": "I",
@@ -3104,7 +3104,7 @@
   "age_max": null,
   "place_min": 1,
   "place_max": 3,
-  "min_competitors": null
+  "min_competitors": 10
  },
  {
   "rank": "I",
@@ -3117,7 +3117,7 @@
   "age_max": null,
   "place_min": 1,
   "place_max": 3,
-  "min_competitors": null
+  "min_competitors": 10
  },
  {
   "rank": "II",
@@ -3130,7 +3130,7 @@
   "age_max": null,
   "place_min": 4,
   "place_max": 5,
-  "min_competitors": null
+  "min_competitors": 10
  },
  {
   "rank": "II",
@@ -3143,7 +3143,7 @@
   "age_max": null,
   "place_min": 4,
   "place_max": 5,
-  "min_competitors": null
+  "min_competitors": 10
  },
  {
   "rank": "II",
@@ -3156,7 +3156,7 @@
   "age_max": null,
   "place_min": 4,
   "place_max": 5,
-  "min_competitors": null
+  "min_competitors": 10
  },
  {
   "rank": "I",
@@ -3169,7 +3169,7 @@
   "age_max": null,
   "place_min": 1,
   "place_max": 2,
-  "min_competitors": null
+  "min_competitors": 8
  },
  {
   "rank": "I",
@@ -3182,7 +3182,7 @@
   "age_max": null,
   "place_min": 1,
   "place_max": 2,
-  "min_competitors": null
+  "min_competitors": 8
  },
  {
   "rank": "I",
@@ -3195,7 +3195,7 @@
   "age_max": null,
   "place_min": 1,
   "place_max": 2,
-  "min_competitors": null
+  "min_competitors": 8
  },
  {
   "rank": "II",
@@ -3208,7 +3208,7 @@
   "age_max": null,
   "place_min": 3,
   "place_max": 4,
-  "min_competitors": null
+  "min_competitors": 8
  },
  {
   "rank": "II",
@@ -3221,7 +3221,7 @@
   "age_max": null,
   "place_min": 3,
   "place_max": 4,
-  "min_competitors": null
+  "min_competitors": 8
  },
  {
   "rank": "II",
@@ -3234,7 +3234,7 @@
   "age_max": null,
   "place_min": 3,
   "place_max": 4,
-  "min_competitors": null
+  "min_competitors": 8
  },
  {
   "rank": "I",
@@ -3247,7 +3247,7 @@
   "age_max": null,
   "place_min": 1,
   "place_max": 3,
-  "min_competitors": null
+  "min_competitors": 8
  },
  {
   "rank": "I",
@@ -3260,7 +3260,7 @@
   "age_max": null,
   "place_min": 1,
   "place_max": 3,
-  "min_competitors": null
+  "min_competitors": 8
  },
  {
   "rank": "II",
@@ -3273,7 +3273,7 @@
   "age_max": null,
   "place_min": 4,
   "place_max": 5,
-  "min_competitors": null
+  "min_competitors": 8
  },
  {
   "rank": "II",
@@ -3286,7 +3286,7 @@
   "age_max": null,
   "place_min": 4,
   "place_max": 5,
-  "min_competitors": null
+  "min_competitors": 8
  },
  {
   "rank": "I",
@@ -3299,7 +3299,7 @@
   "age_max": null,
   "place_min": 1,
   "place_max": 3,
-  "min_competitors": null
+  "min_competitors": 8
  },
  {
   "rank": "II",
@@ -3312,7 +3312,7 @@
   "age_max": null,
   "place_min": 4,
   "place_max": 5,
-  "min_competitors": null
+  "min_competitors": 8
  },
  {
   "rank": "I",
@@ -3325,7 +3325,7 @@
   "age_max": null,
   "place_min": 1,
   "place_max": 5,
-  "min_competitors": null
+  "min_competitors": 15
  },
  {
   "rank": "I",
@@ -3338,7 +3338,7 @@
   "age_max": null,
   "place_min": 1,
   "place_max": 5,
-  "min_competitors": null
+  "min_competitors": 15
  },
  {
   "rank": "I",
@@ -3351,7 +3351,7 @@
   "age_max": null,
   "place_min": 1,
   "place_max": 5,
-  "min_competitors": null
+  "min_competitors": 15
  },
  {
   "rank": "II",
@@ -3364,7 +3364,7 @@
   "age_max": null,
   "place_min": 6,
   "place_max": 8,
-  "min_competitors": null
+  "min_competitors": 15
  },
  {
   "rank": "II",
@@ -3377,7 +3377,7 @@
   "age_max": null,
   "place_min": 6,
   "place_max": 8,
-  "min_competitors": null
+  "min_competitors": 15
  },
  {
   "rank": "II",
@@ -3390,7 +3390,7 @@
   "age_max": null,
   "place_min": 6,
   "place_max": 8,
-  "min_competitors": null
+  "min_competitors": 15
  },
  {
   "rank": "I",
@@ -3403,7 +3403,7 @@
   "age_max": null,
   "place_min": 1,
   "place_max": 5,
-  "min_competitors": null
+  "min_competitors": 10
  },
  {
   "rank": "I",
@@ -3416,7 +3416,7 @@
   "age_max": null,
   "place_min": 1,
   "place_max": 5,
-  "min_competitors": null
+  "min_competitors": 10
  },
  {
   "rank": "I",
@@ -3429,7 +3429,7 @@
   "age_max": null,
   "place_min": 1,
   "place_max": 5,
-  "min_competitors": null
+  "min_competitors": 10
  },
  {
   "rank": "II",
@@ -3442,7 +3442,7 @@
   "age_max": null,
   "place_min": 6,
   "place_max": 7,
-  "min_competitors": null
+  "min_competitors": 10
  },
  {
   "rank": "II",
@@ -3455,7 +3455,7 @@
   "age_max": null,
   "place_min": 6,
   "place_max": 7,
-  "min_competitors": null
+  "min_competitors": 10
  },
  {
   "rank": "II",
@@ -3468,7 +3468,7 @@
   "age_max": null,
   "place_min": 6,
   "place_max": 7,
-  "min_competitors": null
+  "min_competitors": 10
  },
  {
   "rank": "I",
@@ -3481,7 +3481,7 @@
   "age_max": null,
   "place_min": 1,
   "place_max": 5,
-  "min_competitors": null
+  "min_competitors": 15
  },
  {
   "rank": "I",
@@ -3494,7 +3494,7 @@
   "age_max": null,
   "place_min": 1,
   "place_max": 5,
-  "min_competitors": null
+  "min_competitors": 15
  },
  {
   "rank": "II",
@@ -3507,7 +3507,7 @@
   "age_max": null,
   "place_min": 6,
   "place_max": 8,
-  "min_competitors": null
+  "min_competitors": 15
  },
  {
   "rank": "II",
@@ -3520,7 +3520,7 @@
   "age_max": null,
   "place_min": 6,
   "place_max": 8,
-  "min_competitors": null
+  "min_competitors": 15
  },
  {
   "rank": "I",
@@ -3533,7 +3533,7 @@
   "age_max": null,
   "place_min": 1,
   "place_max": 2,
-  "min_competitors": null
+  "min_competitors": 10
  },
  {
   "rank": "I",
@@ -3546,7 +3546,7 @@
   "age_max": null,
   "place_min": 1,
   "place_max": 2,
-  "min_competitors": null
+  "min_competitors": 10
  },
  {
   "rank": "I",
@@ -3559,7 +3559,7 @@
   "age_max": null,
   "place_min": 1,
   "place_max": 2,
-  "min_competitors": null
+  "min_competitors": 10
  },
  {
   "rank": "II",
@@ -3572,7 +3572,7 @@
   "age_max": null,
   "place_min": 3,
   "place_max": 4,
-  "min_competitors": null
+  "min_competitors": 10
  },
  {
   "rank": "II",
@@ -3585,7 +3585,7 @@
   "age_max": null,
   "place_min": 3,
   "place_max": 4,
-  "min_competitors": null
+  "min_competitors": 10
  },
  {
   "rank": "II",
@@ -3598,7 +3598,7 @@
   "age_max": null,
   "place_min": 3,
   "place_max": 4,
-  "min_competitors": null
+  "min_competitors": 10
  },
  {
   "rank": "I",
@@ -3611,7 +3611,7 @@
   "age_max": null,
   "place_min": 1,
   "place_max": 1,
-  "min_competitors": null
+  "min_competitors": 8
  },
  {
   "rank": "I",
@@ -3624,7 +3624,7 @@
   "age_max": null,
   "place_min": 1,
   "place_max": 1,
-  "min_competitors": null
+  "min_competitors": 8
  },
  {
   "rank": "I",
@@ -3637,7 +3637,7 @@
   "age_max": null,
   "place_min": 1,
   "place_max": 1,
-  "min_competitors": null
+  "min_competitors": 8
  },
  {
   "rank": "II",
@@ -3650,7 +3650,7 @@
   "age_max": null,
   "place_min": 2,
   "place_max": 3,
-  "min_competitors": null
+  "min_competitors": 8
  },
  {
   "rank": "II",
@@ -3663,7 +3663,7 @@
   "age_max": null,
   "place_min": 2,
   "place_max": 3,
-  "min_competitors": null
+  "min_competitors": 8
  },
  {
   "rank": "II",
@@ -3676,7 +3676,7 @@
   "age_max": null,
   "place_min": 2,
   "place_max": 3,
-  "min_competitors": null
+  "min_competitors": 8
  },
  {
   "rank": "I",
@@ -3689,7 +3689,7 @@
   "age_max": null,
   "place_min": 1,
   "place_max": 2,
-  "min_competitors": null
+  "min_competitors": 8
  },
  {
   "rank": "I",
@@ -3702,7 +3702,7 @@
   "age_max": null,
   "place_min": 1,
   "place_max": 2,
-  "min_competitors": null
+  "min_competitors": 8
  },
  {
   "rank": "II",
@@ -3715,7 +3715,7 @@
   "age_max": null,
   "place_min": 3,
   "place_max": 4,
-  "min_competitors": null
+  "min_competitors": 8
  },
  {
   "rank": "II",
@@ -3728,7 +3728,7 @@
   "age_max": null,
   "place_min": 3,
   "place_max": 4,
-  "min_competitors": null
+  "min_competitors": 8
  },
  {
   "rank": "I",
@@ -3741,7 +3741,7 @@
   "age_max": null,
   "place_min": 1,
   "place_max": 2,
-  "min_competitors": null
+  "min_competitors": 8
  },
  {
   "rank": "II",
@@ -3754,7 +3754,7 @@
   "age_max": null,
   "place_min": 3,
   "place_max": 4,
-  "min_competitors": null
+  "min_competitors": 8
  },
  {
   "rank": "I",
@@ -3767,7 +3767,7 @@
   "age_max": null,
   "place_min": 1,
   "place_max": 3,
-  "min_competitors": null
+  "min_competitors": 10
  },
  {
   "rank": "II",
@@ -3780,7 +3780,7 @@
   "age_max": null,
   "place_min": 4,
   "place_max": 5,
-  "min_competitors": null
+  "min_competitors": 10
  },
  {
   "rank": "III",
@@ -3793,7 +3793,7 @@
   "age_max": null,
   "place_min": 6,
   "place_max": 7,
-  "min_competitors": null
+  "min_competitors": 10
  },
  {
   "rank": "I",
@@ -3806,7 +3806,7 @@
   "age_max": null,
   "place_min": 1,
   "place_max": 3,
-  "min_competitors": null
+  "min_competitors": 10
  },
  {
   "rank": "II",
@@ -3819,7 +3819,7 @@
   "age_max": null,
   "place_min": 4,
   "place_max": 5,
-  "min_competitors": null
+  "min_competitors": 10
  },
  {
   "rank": "III",
@@ -3832,7 +3832,7 @@
   "age_max": null,
   "place_min": 6,
   "place_max": 7,
-  "min_competitors": null
+  "min_competitors": 10
  },
  {
   "rank": "I",
@@ -3845,7 +3845,7 @@
   "age_max": null,
   "place_min": 1,
   "place_max": 1,
-  "min_competitors": null
+  "min_competitors": 8
  },
  {
   "rank": "II",
@@ -3858,7 +3858,7 @@
   "age_max": null,
   "place_min": 2,
   "place_max": 2,
-  "min_competitors": null
+  "min_competitors": 8
  },
  {
   "rank": "III",
@@ -3871,7 +3871,7 @@
   "age_max": null,
   "place_min": 3,
   "place_max": 3,
-  "min_competitors": null
+  "min_competitors": 8
  },
  {
   "rank": "I",
@@ -3884,7 +3884,7 @@
   "age_max": null,
   "place_min": 1,
   "place_max": 4,
-  "min_competitors": null
+  "min_competitors": 15
  },
  {
   "rank": "I",
@@ -3897,7 +3897,7 @@
   "age_max": null,
   "place_min": 1,
   "place_max": 4,
-  "min_competitors": null
+  "min_competitors": 15
  },
  {
   "rank": "I",
@@ -3910,7 +3910,7 @@
   "age_max": null,
   "place_min": 1,
   "place_max": 4,
-  "min_competitors": null
+  "min_competitors": 15
  },
  {
   "rank": "II",
@@ -3923,7 +3923,7 @@
   "age_max": null,
   "place_min": 5,
   "place_max": 7,
-  "min_competitors": null
+  "min_competitors": 15
  },
  {
   "rank": "II",
@@ -3936,7 +3936,7 @@
   "age_max": null,
   "place_min": 5,
   "place_max": 7,
-  "min_competitors": null
+  "min_competitors": 15
  },
  {
   "rank": "II",
@@ -3949,7 +3949,7 @@
   "age_max": null,
   "place_min": 5,
   "place_max": 7,
-  "min_competitors": null
+  "min_competitors": 15
  },
  {
   "rank": "III",
@@ -3962,7 +3962,7 @@
   "age_max": null,
   "place_min": 8,
   "place_max": 10,
-  "min_competitors": null
+  "min_competitors": 15
  },
  {
   "rank": "III",
@@ -3975,7 +3975,7 @@
   "age_max": null,
   "place_min": 8,
   "place_max": 10,
-  "min_competitors": null
+  "min_competitors": 15
  },
  {
   "rank": "III",
@@ -3988,7 +3988,7 @@
   "age_max": null,
   "place_min": 8,
   "place_max": 10,
-  "min_competitors": null
+  "min_competitors": 15
  },
  {
   "rank": "I",
@@ -4001,7 +4001,7 @@
   "age_max": null,
   "place_min": 1,
   "place_max": 3,
-  "min_competitors": null
+  "min_competitors": 10
  },
  {
   "rank": "I",
@@ -4014,7 +4014,7 @@
   "age_max": null,
   "place_min": 1,
   "place_max": 3,
-  "min_competitors": null
+  "min_competitors": 10
  },
  {
   "rank": "I",
@@ -4027,7 +4027,7 @@
   "age_max": null,
   "place_min": 1,
   "place_max": 3,
-  "min_competitors": null
+  "min_competitors": 10
  },
  {
   "rank": "II",
@@ -4040,7 +4040,7 @@
   "age_max": null,
   "place_min": 4,
   "place_max": 6,
-  "min_competitors": null
+  "min_competitors": 10
  },
  {
   "rank": "II",
@@ -4053,7 +4053,7 @@
   "age_max": null,
   "place_min": 4,
   "place_max": 6,
-  "min_competitors": null
+  "min_competitors": 10
  },
  {
   "rank": "II",
@@ -4066,7 +4066,7 @@
   "age_max": null,
   "place_min": 4,
   "place_max": 6,
-  "min_competitors": null
+  "min_competitors": 10
  },
  {
   "rank": "III",
@@ -4079,7 +4079,7 @@
   "age_max": null,
   "place_min": 7,
   "place_max": 8,
-  "min_competitors": null
+  "min_competitors": 10
  },
  {
   "rank": "III",
@@ -4092,7 +4092,7 @@
   "age_max": null,
   "place_min": 7,
   "place_max": 8,
-  "min_competitors": null
+  "min_competitors": 10
  },
  {
   "rank": "III",
@@ -4105,7 +4105,7 @@
   "age_max": null,
   "place_min": 7,
   "place_max": 8,
-  "min_competitors": null
+  "min_competitors": 10
  },
  {
   "rank": "I",
@@ -4118,7 +4118,7 @@
   "age_max": null,
   "place_min": 1,
   "place_max": 3,
-  "min_competitors": null
+  "min_competitors": 15
  },
  {
   "rank": "I",
@@ -4131,7 +4131,7 @@
   "age_max": null,
   "place_min": 1,
   "place_max": 3,
-  "min_competitors": null
+  "min_competitors": 15
  },
  {
   "rank": "II",
@@ -4144,7 +4144,7 @@
   "age_max": null,
   "place_min": 4,
   "place_max": 7,
-  "min_competitors": null
+  "min_competitors": 15
  },
  {
   "rank": "II",
@@ -4157,7 +4157,7 @@
   "age_max": null,
   "place_min": 4,
   "place_max": 7,
-  "min_competitors": null
+  "min_competitors": 15
  },
  {
   "rank": "III",
@@ -4170,7 +4170,7 @@
   "age_max": null,
   "place_min": 8,
   "place_max": 10,
-  "min_competitors": null
+  "min_competitors": 15
  },
  {
   "rank": "III",
@@ -4183,7 +4183,7 @@
   "age_max": null,
   "place_min": 8,
   "place_max": 10,
-  "min_competitors": null
+  "min_competitors": 15
  },
  {
   "rank": "I",
@@ -4196,7 +4196,7 @@
   "age_max": null,
   "place_min": 1,
   "place_max": 1,
-  "min_competitors": null
+  "min_competitors": 10
  },
  {
   "rank": "I",
@@ -4209,7 +4209,7 @@
   "age_max": null,
   "place_min": 1,
   "place_max": 1,
-  "min_competitors": null
+  "min_competitors": 10
  },
  {
   "rank": "I",
@@ -4222,7 +4222,7 @@
   "age_max": null,
   "place_min": 1,
   "place_max": 1,
-  "min_competitors": null
+  "min_competitors": 10
  },
  {
   "rank": "II",
@@ -4235,7 +4235,7 @@
   "age_max": null,
   "place_min": 2,
   "place_max": 3,
-  "min_competitors": null
+  "min_competitors": 10
  },
  {
   "rank": "II",
@@ -4248,7 +4248,7 @@
   "age_max": null,
   "place_min": 2,
   "place_max": 3,
-  "min_competitors": null
+  "min_competitors": 10
  },
  {
   "rank": "II",
@@ -4261,7 +4261,7 @@
   "age_max": null,
   "place_min": 2,
   "place_max": 3,
-  "min_competitors": null
+  "min_competitors": 10
  },
  {
   "rank": "III",
@@ -4274,7 +4274,7 @@
   "age_max": null,
   "place_min": 4,
   "place_max": 4,
-  "min_competitors": null
+  "min_competitors": 10
  },
  {
   "rank": "III",
@@ -4287,7 +4287,7 @@
   "age_max": null,
   "place_min": 4,
   "place_max": 4,
-  "min_competitors": null
+  "min_competitors": 10
  },
  {
   "rank": "III",
@@ -4300,7 +4300,7 @@
   "age_max": null,
   "place_min": 4,
   "place_max": 4,
-  "min_competitors": null
+  "min_competitors": 10
  },
  {
   "rank": "I",
@@ -4313,7 +4313,7 @@
   "age_max": null,
   "place_min": 1,
   "place_max": 1,
-  "min_competitors": null
+  "min_competitors": 8
  },
  {
   "rank": "I",
@@ -4326,7 +4326,7 @@
   "age_max": null,
   "place_min": 1,
   "place_max": 1,
-  "min_competitors": null
+  "min_competitors": 8
  },
  {
   "rank": "I",
@@ -4339,7 +4339,7 @@
   "age_max": null,
   "place_min": 1,
   "place_max": 1,
-  "min_competitors": null
+  "min_competitors": 8
  },
  {
   "rank": "II",
@@ -4352,7 +4352,7 @@
   "age_max": null,
   "place_min": 2,
   "place_max": 3,
-  "min_competitors": null
+  "min_competitors": 8
  },
  {
   "rank": "II",
@@ -4365,7 +4365,7 @@
   "age_max": null,
   "place_min": 2,
   "place_max": 3,
-  "min_competitors": null
+  "min_competitors": 8
  },
  {
   "rank": "II",
@@ -4378,7 +4378,7 @@
   "age_max": null,
   "place_min": 2,
   "place_max": 3,
-  "min_competitors": null
+  "min_competitors": 8
  },
  {
   "rank": "I",
@@ -4391,7 +4391,7 @@
   "age_max": null,
   "place_min": 1,
   "place_max": 1,
-  "min_competitors": null
+  "min_competitors": 8
  },
  {
   "rank": "I",
@@ -4404,7 +4404,7 @@
   "age_max": null,
   "place_min": 1,
   "place_max": 1,
-  "min_competitors": null
+  "min_competitors": 8
  },
  {
   "rank": "II",
@@ -4417,7 +4417,7 @@
   "age_max": null,
   "place_min": 2,
   "place_max": 3,
-  "min_competitors": null
+  "min_competitors": 8
  },
  {
   "rank": "II",
@@ -4430,7 +4430,7 @@
   "age_max": null,
   "place_min": 2,
   "place_max": 3,
-  "min_competitors": null
+  "min_competitors": 8
  },
  {
   "rank": "III",
@@ -4443,7 +4443,7 @@
   "age_max": null,
   "place_min": 4,
   "place_max": 4,
-  "min_competitors": null
+  "min_competitors": 8
  },
  {
   "rank": "III",
@@ -4456,7 +4456,7 @@
   "age_max": null,
   "place_min": 4,
   "place_max": 4,
-  "min_competitors": null
+  "min_competitors": 8
  },
  {
   "rank": "I",
@@ -4469,7 +4469,7 @@
   "age_max": null,
   "place_min": 1,
   "place_max": 1,
-  "min_competitors": null
+  "min_competitors": 8
  },
  {
   "rank": "II",
@@ -4482,7 +4482,7 @@
   "age_max": null,
   "place_min": 2,
   "place_max": 3,
-  "min_competitors": null
+  "min_competitors": 8
  },
  {
   "rank": "III",
@@ -4495,7 +4495,7 @@
   "age_max": null,
   "place_min": 4,
   "place_max": 4,
-  "min_competitors": null
+  "min_competitors": 8
  },
  {
   "rank": "II",
@@ -4508,7 +4508,7 @@
   "age_max": null,
   "place_min": 1,
   "place_max": 6,
-  "min_competitors": null
+  "min_competitors": 15
  },
  {
   "rank": "II",
@@ -4521,7 +4521,7 @@
   "age_max": null,
   "place_min": 1,
   "place_max": 6,
-  "min_competitors": null
+  "min_competitors": 15
  },
  {
   "rank": "II",
@@ -4534,7 +4534,7 @@
   "age_max": null,
   "place_min": 1,
   "place_max": 6,
-  "min_competitors": null
+  "min_competitors": 15
  },
  {
   "rank": "III",
@@ -4547,7 +4547,7 @@
   "age_max": null,
   "place_min": 7,
   "place_max": 11,
-  "min_competitors": null
+  "min_competitors": 15
  },
  {
   "rank": "III",
@@ -4560,7 +4560,7 @@
   "age_max": null,
   "place_min": 7,
   "place_max": 11,
-  "min_competitors": null
+  "min_competitors": 15
  },
  {
   "rank": "III",
@@ -4573,7 +4573,7 @@
   "age_max": null,
   "place_min": 7,
   "place_max": 11,
-  "min_competitors": null
+  "min_competitors": 15
  },
  {
   "rank": "II",
@@ -4586,7 +4586,7 @@
   "age_max": null,
   "place_min": 1,
   "place_max": 4,
-  "min_competitors": null
+  "min_competitors": 10
  },
  {
   "rank": "II",
@@ -4599,7 +4599,7 @@
   "age_max": null,
   "place_min": 1,
   "place_max": 4,
-  "min_competitors": null
+  "min_competitors": 10
  },
  {
   "rank": "II",
@@ -4612,7 +4612,7 @@
   "age_max": null,
   "place_min": 1,
   "place_max": 4,
-  "min_competitors": null
+  "min_competitors": 10
  },
  {
   "rank": "III",
@@ -4625,7 +4625,7 @@
   "age_max": null,
   "place_min": 5,
   "place_max": 7,
-  "min_competitors": null
+  "min_competitors": 10
  },
  {
   "rank": "III",
@@ -4638,7 +4638,7 @@
   "age_max": null,
   "place_min": 5,
   "place_max": 7,
-  "min_competitors": null
+  "min_competitors": 10
  },
  {
   "rank": "III",
@@ -4651,7 +4651,7 @@
   "age_max": null,
   "place_min": 5,
   "place_max": 7,
-  "min_competitors": null
+  "min_competitors": 10
  },
  {
   "rank": "II",
@@ -4664,7 +4664,7 @@
   "age_max": null,
   "place_min": 1,
   "place_max": 2,
-  "min_competitors": null
+  "min_competitors": 8
  },
  {
   "rank": "II",
@@ -4677,7 +4677,7 @@
   "age_max": null,
   "place_min": 1,
   "place_max": 2,
-  "min_competitors": null
+  "min_competitors": 8
  },
  {
   "rank": "II",
@@ -4690,7 +4690,7 @@
   "age_max": null,
   "place_min": 1,
   "place_max": 2,
-  "min_competitors": null
+  "min_competitors": 8
  },
  {
   "rank": "III",
@@ -4703,7 +4703,7 @@
   "age_max": null,
   "place_min": 3,
   "place_max": 4,
-  "min_competitors": null
+  "min_competitors": 8
  },
  {
   "rank": "III",
@@ -4716,7 +4716,7 @@
   "age_max": null,
   "place_min": 3,
   "place_max": 4,
-  "min_competitors": null
+  "min_competitors": 8
  },
  {
   "rank": "III",
@@ -4729,7 +4729,7 @@
   "age_max": null,
   "place_min": 3,
   "place_max": 4,
-  "min_competitors": null
+  "min_competitors": 8
  },
  {
   "rank": "II",
@@ -4742,7 +4742,7 @@
   "age_max": null,
   "place_min": 1,
   "place_max": 2,
-  "min_competitors": null
+  "min_competitors": 8
  },
  {
   "rank": "II",
@@ -4755,7 +4755,7 @@
   "age_max": null,
   "place_min": 1,
   "place_max": 2,
-  "min_competitors": null
+  "min_competitors": 8
  },
  {
   "rank": "II",
@@ -4768,7 +4768,7 @@
   "age_max": null,
   "place_min": 1,
   "place_max": 2,
-  "min_competitors": null
+  "min_competitors": 8
  },
  {
   "rank": "III",
@@ -4781,7 +4781,7 @@
   "age_max": null,
   "place_min": 3,
   "place_max": 4,
-  "min_competitors": null
+  "min_competitors": 8
  },
  {
   "rank": "III",
@@ -4794,7 +4794,7 @@
   "age_max": null,
   "place_min": 3,
   "place_max": 4,
-  "min_competitors": null
+  "min_competitors": 8
  },
  {
   "rank": "III",
@@ -4807,7 +4807,7 @@
   "age_max": null,
   "place_min": 3,
   "place_max": 4,
-  "min_competitors": null
+  "min_competitors": 8
  },
  {
   "rank": "II",
@@ -4820,7 +4820,7 @@
   "age_max": null,
   "place_min": 1,
   "place_max": 6,
-  "min_competitors": null
+  "min_competitors": 15
  },
  {
   "rank": "II",
@@ -4833,7 +4833,7 @@
   "age_max": null,
   "place_min": 1,
   "place_max": 6,
-  "min_competitors": null
+  "min_competitors": 15
  },
  {
   "rank": "III",
@@ -4846,7 +4846,7 @@
   "age_max": null,
   "place_min": 7,
   "place_max": 11,
-  "min_competitors": null
+  "min_competitors": 15
  },
  {
   "rank": "III",
@@ -4859,7 +4859,7 @@
   "age_max": null,
   "place_min": 7,
   "place_max": 11,
-  "min_competitors": null
+  "min_competitors": 15
  },
  {
   "rank": "II",
@@ -4872,7 +4872,7 @@
   "age_max": null,
   "place_min": 1,
   "place_max": 2,
-  "min_competitors": null
+  "min_competitors": 8
  },
  {
   "rank": "II",
@@ -4885,7 +4885,7 @@
   "age_max": null,
   "place_min": 1,
   "place_max": 2,
-  "min_competitors": null
+  "min_competitors": 8
  },
  {
   "rank": "III",
@@ -4898,7 +4898,7 @@
   "age_max": null,
   "place_min": 3,
   "place_max": 4,
-  "min_competitors": null
+  "min_competitors": 8
  },
  {
   "rank": "III",
@@ -4911,7 +4911,7 @@
   "age_max": null,
   "place_min": 3,
   "place_max": 4,
-  "min_competitors": null
+  "min_competitors": 8
  },
  {
   "rank": "II",
@@ -4924,7 +4924,7 @@
   "age_max": null,
   "place_min": 1,
   "place_max": 4,
-  "min_competitors": null
+  "min_competitors": 10
  },
  {
   "rank": "III",
@@ -4937,7 +4937,7 @@
   "age_max": null,
   "place_min": 5,
   "place_max": 7,
-  "min_competitors": null
+  "min_competitors": 10
  },
  {
   "rank": "II",
@@ -4950,7 +4950,7 @@
   "age_max": null,
   "place_min": 1,
   "place_max": 2,
-  "min_competitors": null
+  "min_competitors": 8
  },
  {
   "rank": "III",
@@ -4963,7 +4963,7 @@
   "age_max": null,
   "place_min": 3,
   "place_max": 4,
-  "min_competitors": null
+  "min_competitors": 8
  },
  {
   "rank": "II",
@@ -4976,7 +4976,7 @@
   "age_max": null,
   "place_min": 1,
   "place_max": 2,
-  "min_competitors": null
+  "min_competitors": 10
  },
  {
   "rank": "III",
@@ -4989,7 +4989,7 @@
   "age_max": null,
   "place_min": 3,
   "place_max": 4,
-  "min_competitors": null
+  "min_competitors": 10
  },
  {
   "rank": "I_ю",
@@ -5002,7 +5002,7 @@
   "age_max": 18,
   "place_min": 5,
   "place_max": 5,
-  "min_competitors": null
+  "min_competitors": 10
  },
  {
   "rank": "II_ю",
@@ -5015,7 +5015,7 @@
   "age_max": 18,
   "place_min": 6,
   "place_max": 6,
-  "min_competitors": null
+  "min_competitors": 10
  },
  {
   "rank": "III_ю",
@@ -5028,7 +5028,7 @@
   "age_max": 18,
   "place_min": 7,
   "place_max": 8,
-  "min_competitors": null
+  "min_competitors": 10
  },
  {
   "rank": "II",
@@ -5041,7 +5041,7 @@
   "age_max": null,
   "place_min": 1,
   "place_max": 2,
-  "min_competitors": null
+  "min_competitors": 10
  },
  {
   "rank": "III",
@@ -5054,7 +5054,7 @@
   "age_max": null,
   "place_min": 3,
   "place_max": 4,
-  "min_competitors": null
+  "min_competitors": 10
  },
  {
   "rank": "I_ю",
@@ -5067,7 +5067,7 @@
   "age_max": 18,
   "place_min": 5,
   "place_max": 5,
-  "min_competitors": null
+  "min_competitors": 10
  },
  {
   "rank": "II_ю",
@@ -5080,7 +5080,7 @@
   "age_max": 18,
   "place_min": 6,
   "place_max": 6,
-  "min_competitors": null
+  "min_competitors": 10
  },
  {
   "rank": "III_ю",
@@ -5093,7 +5093,7 @@
   "age_max": 18,
   "place_min": 7,
   "place_max": 8,
-  "min_competitors": null
+  "min_competitors": 10
  },
  {
   "rank": "II",
@@ -5106,7 +5106,7 @@
   "age_max": null,
   "place_min": 1,
   "place_max": 1,
-  "min_competitors": null
+  "min_competitors": 8
  },
  {
   "rank": "III",
@@ -5119,7 +5119,7 @@
   "age_max": null,
   "place_min": 2,
   "place_max": 2,
-  "min_competitors": null
+  "min_competitors": 8
  },
  {
   "rank": "I_ю",
@@ -5132,7 +5132,7 @@
   "age_max": 18,
   "place_min": 3,
   "place_max": 3,
-  "min_competitors": null
+  "min_competitors": 8
  },
  {
   "rank": "II_ю",
@@ -5145,7 +5145,7 @@
   "age_max": 18,
   "place_min": 4,
   "place_max": 4,
-  "min_competitors": null
+  "min_competitors": 8
  },
  {
   "rank": "III_ю",
@@ -5158,7 +5158,7 @@
   "age_max": 18,
   "place_min": 5,
   "place_max": 5,
-  "min_competitors": null
+  "min_competitors": 8
  },
  {
   "rank": "II",
@@ -5171,7 +5171,7 @@
   "age_max": null,
   "place_min": 1,
   "place_max": 3,
-  "min_competitors": null
+  "min_competitors": 10
  },
  {
   "rank": "II",
@@ -5184,7 +5184,7 @@
   "age_max": null,
   "place_min": 1,
   "place_max": 3,
-  "min_competitors": null
+  "min_competitors": 10
  },
  {
   "rank": "II",
@@ -5197,7 +5197,7 @@
   "age_max": null,
   "place_min": 1,
   "place_max": 3,
-  "min_competitors": null
+  "min_competitors": 10
  },
  {
   "rank": "III",
@@ -5210,7 +5210,7 @@
   "age_max": null,
   "place_min": 4,
   "place_max": 6,
-  "min_competitors": null
+  "min_competitors": 10
  },
  {
   "rank": "III",
@@ -5223,7 +5223,7 @@
   "age_max": null,
   "place_min": 4,
   "place_max": 6,
-  "min_competitors": null
+  "min_competitors": 10
  },
  {
   "rank": "III",
@@ -5236,7 +5236,7 @@
   "age_max": null,
   "place_min": 4,
   "place_max": 6,
-  "min_competitors": null
+  "min_competitors": 10
  },
  {
   "rank": "II",
@@ -5249,7 +5249,7 @@
   "age_max": null,
   "place_min": 1,
   "place_max": 2,
-  "min_competitors": null
+  "min_competitors": 8
  },
  {
   "rank": "II",
@@ -5262,7 +5262,7 @@
   "age_max": null,
   "place_min": 1,
   "place_max": 2,
-  "min_competitors": null
+  "min_competitors": 8
  },
  {
   "rank": "II",
@@ -5275,7 +5275,7 @@
   "age_max": null,
   "place_min": 1,
   "place_max": 2,
-  "min_competitors": null
+  "min_competitors": 8
  },
  {
   "rank": "III",
@@ -5288,7 +5288,7 @@
   "age_max": null,
   "place_min": 3,
   "place_max": 5,
-  "min_competitors": null
+  "min_competitors": 8
  },
  {
   "rank": "III",
@@ -5301,7 +5301,7 @@
   "age_max": null,
   "place_min": 3,
   "place_max": 5,
-  "min_competitors": null
+  "min_competitors": 8
  },
  {
   "rank": "III",
@@ -5314,7 +5314,7 @@
   "age_max": null,
   "place_min": 3,
   "place_max": 5,
-  "min_competitors": null
+  "min_competitors": 8
  },
  {
   "rank": "II",
@@ -5327,7 +5327,7 @@
   "age_max": null,
   "place_min": 1,
   "place_max": 1,
-  "min_competitors": null
+  "min_competitors": 6
  },
  {
   "rank": "II",
@@ -5340,7 +5340,7 @@
   "age_max": null,
   "place_min": 1,
   "place_max": 1,
-  "min_competitors": null
+  "min_competitors": 6
  },
  {
   "rank": "II",
@@ -5353,7 +5353,7 @@
   "age_max": null,
   "place_min": 1,
   "place_max": 1,
-  "min_competitors": null
+  "min_competitors": 6
  },
  {
   "rank": "III",
@@ -5366,7 +5366,7 @@
   "age_max": null,
   "place_min": 2,
   "place_max": 2,
-  "min_competitors": null
+  "min_competitors": 6
  },
  {
   "rank": "III",
@@ -5379,7 +5379,7 @@
   "age_max": null,
   "place_min": 2,
   "place_max": 2,
-  "min_competitors": null
+  "min_competitors": 6
  },
  {
   "rank": "III",
@@ -5392,7 +5392,7 @@
   "age_max": null,
   "place_min": 2,
   "place_max": 2,
-  "min_competitors": null
+  "min_competitors": 6
  },
  {
   "rank": "II",
@@ -5405,7 +5405,7 @@
   "age_max": null,
   "place_min": 1,
   "place_max": 1,
-  "min_competitors": null
+  "min_competitors": 6
  },
  {
   "rank": "II",
@@ -5418,7 +5418,7 @@
   "age_max": null,
   "place_min": 1,
   "place_max": 1,
-  "min_competitors": null
+  "min_competitors": 6
  },
  {
   "rank": "II",
@@ -5431,7 +5431,7 @@
   "age_max": null,
   "place_min": 1,
   "place_max": 1,
-  "min_competitors": null
+  "min_competitors": 6
  },
  {
   "rank": "III",
@@ -5444,7 +5444,7 @@
   "age_max": null,
   "place_min": 2,
   "place_max": 2,
-  "min_competitors": null
+  "min_competitors": 6
  },
  {
   "rank": "III",
@@ -5457,7 +5457,7 @@
   "age_max": null,
   "place_min": 2,
   "place_max": 2,
-  "min_competitors": null
+  "min_competitors": 6
  },
  {
   "rank": "III",
@@ -5470,7 +5470,7 @@
   "age_max": null,
   "place_min": 2,
   "place_max": 2,
-  "min_competitors": null
+  "min_competitors": 6
  },
  {
   "rank": "II",
@@ -5483,7 +5483,7 @@
   "age_max": null,
   "place_min": 1,
   "place_max": 3,
-  "min_competitors": null
+  "min_competitors": 10
  },
  {
   "rank": "II",
@@ -5496,7 +5496,7 @@
   "age_max": null,
   "place_min": 1,
   "place_max": 3,
-  "min_competitors": null
+  "min_competitors": 10
  },
  {
   "rank": "III",
@@ -5509,7 +5509,7 @@
   "age_max": null,
   "place_min": 4,
   "place_max": 6,
-  "min_competitors": null
+  "min_competitors": 10
  },
  {
   "rank": "III",
@@ -5522,7 +5522,7 @@
   "age_max": null,
   "place_min": 4,
   "place_max": 6,
-  "min_competitors": null
+  "min_competitors": 10
  },
  {
   "rank": "II",
@@ -5535,7 +5535,7 @@
   "age_max": null,
   "place_min": 1,
   "place_max": 1,
-  "min_competitors": null
+  "min_competitors": 6
  },
  {
   "rank": "II",
@@ -5548,7 +5548,7 @@
   "age_max": null,
   "place_min": 1,
   "place_max": 1,
-  "min_competitors": null
+  "min_competitors": 6
  },
  {
   "rank": "III",
@@ -5561,7 +5561,7 @@
   "age_max": null,
   "place_min": 2,
   "place_max": 2,
-  "min_competitors": null
+  "min_competitors": 6
  },
  {
   "rank": "III",
@@ -5574,7 +5574,7 @@
   "age_max": null,
   "place_min": 2,
   "place_max": 2,
-  "min_competitors": null
+  "min_competitors": 6
  },
  {
   "rank": "II",
@@ -5587,7 +5587,7 @@
   "age_max": null,
   "place_min": 1,
   "place_max": 3,
-  "min_competitors": null
+  "min_competitors": 10
  },
  {
   "rank": "III",
@@ -5600,7 +5600,7 @@
   "age_max": null,
   "place_min": 4,
   "place_max": 6,
-  "min_competitors": null
+  "min_competitors": 10
  },
  {
   "rank": "II",
@@ -5613,7 +5613,7 @@
   "age_max": null,
   "place_min": 1,
   "place_max": 1,
-  "min_competitors": null
+  "min_competitors": 6
  },
  {
   "rank": "III",
@@ -5626,6 +5626,6 @@
   "age_max": null,
   "place_min": 2,
   "place_max": 2,
-  "min_competitors": null
+  "min_competitors": 6
  }
 ]

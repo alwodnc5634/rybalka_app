@@ -45,6 +45,11 @@
     header, nav, .no-print { display: none !important; }
     body { background: white; } main { padding: 0; max-width: 100%; } .card { border: none; padding: 0; }
   }
+  .draw-table select { min-width: 70px; padding: 3px 6px; }
+  .draw-table .so-input { width: 72px; padding: 3px 6px; }
+  .conflict { border: 2px solid #c0392b !important; background: #fdecea !important; }
+  .warn-box { background: #fff4e5; border: 1px solid #f0b37e; color: #7a4a00; border-radius: 8px;
+    padding: 10px 12px; margin-bottom: 12px; font-size: 13px; line-height: 1.5; }
 </style>
 </head>
 <body>
@@ -54,6 +59,7 @@
   <h1 id="app-title">🎣 Рыбалка</h1>
   <nav>
     <button data-tab="reg" class="active">Регистрация</button>
+    <button data-tab="draw">Жеребьёвка</button>
     <button data-tab="weigh">Взвешивание</button>
     <button data-tab="results">Протокол</button>
     <button data-tab="evsk">Разряды</button>
@@ -85,14 +91,10 @@
         <label><input type="checkbox" id="t-half-zones" style="width:auto" onchange="onHalfZonesToggle()"> Делить каждую зону на 2 полузоны (независимый рейтинг внутри полузоны)</label>
       </div>
       <div class="field-row">
-        <label><input type="checkbox" id="t-auto-draw" style="width:auto"> Автоматическая жеребьёвка (зона/полузона на тур + очерёдность старта)</label>
+        <label><input type="checkbox" id="t-auto-draw" style="width:auto"> Автоматическая жеребьёвка (кнопка появится на вкладке «Жеребьёвка»)</label>
       </div>
       <button class="primary" onclick="saveTournament()">Сохранить</button>
       <p class="hint">Баллы = вес улова за тур целиком (без периодов). Санкция «до взвешивания» — штрафной балл (последнее место); «после взвешивания» — в протоколе вес показывается как 0, при этом рейтинг зоны для остальных участников считается по формуле, буквально проверенной по исходным файлам.</p>
-      <div id="draw-block" class="no-print" style="margin-top:12px; display:none">
-        <button class="primary" onclick="runDraw()">🎲 Провести жеребьёвку</button>
-        <span class="hint">Заново случайно распределит зону/полузону на КАЖДЫЙ тур и очерёдность старта у ВСЕХ спортсменов (можно поправить вручную после).</span>
-      </div>
     </div>
 
     <div class="card">
@@ -125,23 +127,43 @@
       </div>
       <div class="field-row">
         <label>Команда (если есть)</label><select id="new-team-select"><option value="">— без команды —</option></select>
-        <label>Очерёдность старта</label><input id="new-start-order" type="number" style="max-width:100px">
-      </div>
-      <div class="field-row">
-        <label>Зона, 1 тур</label><select id="new-zone1"></select>
-        <label id="halfzone1-label" style="display:none">Полузона, 1 тур</label><select id="new-halfzone1" style="display:none"><option value="">—</option><option value="1">1</option><option value="2">2</option></select>
-        <label id="zone2-label">Зона, 2 тур</label><select id="new-zone2"></select>
-        <label id="halfzone2-label" style="display:none">Полузона, 2 тур</label><select id="new-halfzone2" style="display:none"><option value="">—</option><option value="1">1</option><option value="2">2</option></select>
       </div>
       <button class="primary" onclick="createEntry()">Зарегистрировать</button>
+      <p class="hint">Зона и стартовый номер при регистрации не указываются: регистрация идёт до начала соревнования,
+        когда жеребьёвки ещё не было. Они назначаются потом — на вкладке «Жеребьёвка» (вручную или автоматически).</p>
     </div>
 
     <div class="card">
       <h2>Зарегистрированные спортсмены</h2>
       <table id="entries-table">
-        <thead><tr><th>№</th><th>ФИО</th><th>Разряд</th><th>Команда</th><th>Зона 1т</th><th id="hz1-th" style="display:none">Полузона 1т</th><th>Зона 2т</th><th id="hz2-th" style="display:none">Полузона 2т</th><th class="no-print"></th></tr></thead>
+        <thead><tr><th>№</th><th>ФИО</th><th>Разряд</th><th>Команда</th><th>Старт. №</th><th class="no-print"></th></tr></thead>
         <tbody></tbody>
       </table>
+    </div>
+  </section>
+
+  <!-- ЖЕРЕБЬЁВКА -->
+  <section id="tab-draw" style="display:none">
+    <div class="card">
+      <h2>Жеребьёвка — зоны по турам</h2>
+      <p class="hint">Проводится ПОСЛЕ регистрации. Зону на каждый тур и стартовый номер можно выставить вручную
+        (изменения в таблице сохраняются сразу) или нажать кнопку автоматической жеребьёвки. Автоматическая
+        жеребьёвка проводится <b>по жребию отдельно на каждый тур</b> и соблюдает правила: <b>участники одной
+        команды всегда в разных зонах</b> (кто из них в какую — жребий), <b>личники делятся по зонам поровну</b>
+        (при остатке разница не больше одного человека, лишний — по жребию).</p>
+      <div id="draw-block" class="no-print" style="display:none; margin-bottom:12px">
+        <button class="primary" onclick="runDraw()">🎲 Провести жеребьёвку автоматически</button>
+        <span class="hint">Разыграет заново зоны во всех турах и стартовые номера у ВСЕХ спортсменов. После этого
+          можно поправить отдельные строки вручную.</span>
+      </div>
+      <p class="hint" id="draw-autooff" style="display:none">Автоматическая жеребьёвка выключена в данных турнира —
+        заполните зоны вручную либо включите галочку «Автоматическая жеребьёвка» на вкладке «Регистрация».</p>
+      <div id="draw-warnings"></div>
+      <table class="draw-table">
+        <thead><tr id="draw-head"></tr></thead>
+        <tbody id="draw-body"></tbody>
+      </table>
+      <div id="draw-summary" class="hint" style="margin-top:10px"></div>
     </div>
   </section>
 
@@ -247,9 +269,10 @@ async function apiSend(method, url, payload) {
 
 function switchTab(tab) {
   document.querySelectorAll("nav button").forEach(b => b.classList.toggle("active", b.dataset.tab === tab));
-  ["reg","weigh","results","evsk"].forEach(t => {
+  ["reg","draw","weigh","results","evsk"].forEach(t => {
     document.getElementById("tab-" + t).style.display = (t === tab) ? "block" : "none";
   });
+  if (tab === "draw") loadDrawTab();
   if (tab === "weigh") loadWeighTab();
   if (tab === "results") loadResultsTab();
   if (tab === "evsk") loadEvskTab();
@@ -276,19 +299,12 @@ async function loadEvskTierOptions() {
     sel.value = prev;
   } catch (e) { /* тихо */ }
 }
-function onHalfZonesToggle() {
-  const on = document.getElementById("t-half-zones").checked;
-  document.getElementById("halfzone1-label").style.display = on ? "" : "none";
-  document.getElementById("new-halfzone1").style.display = on ? "" : "none";
-  document.getElementById("halfzone2-label").style.display = on ? "" : "none";
-  document.getElementById("new-halfzone2").style.display = on ? "" : "none";
-  document.getElementById("hz1-th").style.display = on ? "" : "none";
-  document.getElementById("hz2-th").style.display = on ? "" : "none";
-}
+function onHalfZonesToggle() { /* полузоны выбираются на вкладке «Жеребьёвка» */ }
 async function runDraw() {
-  if (!confirm("Заново случайно распределить зону/полузону на каждый тур и очерёдность старта у ВСЕХ спортсменов? Текущие значения будут перезаписаны.")) return;
+  if (!confirm("Заново разыграть по жребию зоны во всех турах и стартовые номера у ВСЕХ спортсменов? Текущие значения будут перезаписаны.")) return;
   try {
     const r = await apiSend("POST", "/api/zw/draw", {});
+    await loadDrawTab();
     await loadEntries();
     toast(`Жеребьёвка проведена: ${r.count} спортсменов ✓`);
   } catch (e) { toast("Не удалось провести жеребьёвку: " + e.message, false); }
@@ -309,10 +325,7 @@ async function loadTournament() {
     document.getElementById("t-evsk-tier").value = t.evsk_tier || "";
     document.getElementById("t-half-zones").checked = !!t.half_zones_enabled;
     document.getElementById("t-auto-draw").checked = !!t.auto_draw_enabled;
-    document.getElementById("draw-block").style.display = t.auto_draw_enabled ? "block" : "none";
-    onHalfZonesToggle();
     document.getElementById("app-title").textContent = "🎣 " + (t.name_full || disciplineName || "Рыбалка");
-    refreshZoneSelects();
     refreshTourVisibility();
     refreshWeighSelectors();
   } catch (e) { toast("Не удалось загрузить турнир: " + e.message, false); }
@@ -333,28 +346,162 @@ async function saveTournament() {
       half_zones_enabled: document.getElementById("t-half-zones").checked,
       auto_draw_enabled: autoDraw,
     });
-    document.getElementById("draw-block").style.display = autoDraw ? "block" : "none";
     toast("Данные турнира сохранены ✓");
     await loadTournament();
   } catch (e) { toast("Не сохранено: " + e.message, false); }
-}
-function refreshZoneSelects() {
-  const zones = zoneList();
-  const opts = zones.map(z => `<option value="${z}">${z}</option>`).join("");
-  document.getElementById("new-zone1").innerHTML = opts;
-  document.getElementById("new-zone2").innerHTML = opts;
 }
 function refreshTourVisibility() {
   const toursCount = parseInt(document.getElementById("t-tours").value || tournamentCache.tours_count || 2);
   const twoTours = toursCount == 2;
   document.getElementById("date2-label").style.display = twoTours ? "" : "none";
   document.getElementById("t-date2").style.display = twoTours ? "" : "none";
-  document.getElementById("zone2-label").style.display = twoTours ? "" : "none";
-  document.getElementById("new-zone2").style.display = twoTours ? "" : "none";
-  const halfOn = document.getElementById("t-half-zones").checked;
-  document.getElementById("halfzone2-label").style.display = (twoTours && halfOn) ? "" : "none";
-  document.getElementById("new-halfzone2").style.display = (twoTours && halfOn) ? "" : "none";
 }
+
+// ---------- Жеребьёвка (ручная и автоматическая) ----------
+let drawEntries = [];
+const ROUND_LABEL = "Тур";
+function roundsCount() { return tournamentCache.tours_count || 2; }
+function zoneOf(e, r) { return e["zone_tour" + r] || ""; }
+function halfOf(e, r) { return e["half_zone_tour" + r] || ""; }
+function storeZone(e, r, z, h) { e["zone_tour" + r] = z || null; e["half_zone_tour" + r] = h || null; }
+function zoneApiPayload(r, zone, half) { return { tour_number: r, zone, half_zone: half }; }
+const DRAW_API = "/api/zw";
+
+async function loadDrawTab() {
+  try { drawEntries = await apiGet(DRAW_API + "/entries"); }
+  catch (e) { toast("Не удалось загрузить список: " + e.message, false); return; }
+  renderDrawTable();
+}
+function renderDrawTable() {
+  const rc = roundsCount();
+  const half = !!tournamentCache.half_zones_enabled;
+  const auto = !!tournamentCache.auto_draw_enabled;
+  document.getElementById("draw-block").style.display = auto ? "block" : "none";
+  document.getElementById("draw-autooff").style.display = auto ? "none" : "block";
+  let head = `<th>№</th><th>ФИО</th><th>Команда</th><th>Старт. №</th>`;
+  for (let r = 1; r <= rc; r++) {
+    head += `<th>Зона, ${ROUND_LABEL.toLowerCase()} ${r}</th>`;
+    if (half) head += `<th>Полузона ${r}</th>`;
+  }
+  document.getElementById("draw-head").innerHTML = head;
+  const zones = zoneList();
+  const tbody = document.getElementById("draw-body");
+  tbody.innerHTML = "";
+  if (!drawEntries.length) {
+    tbody.innerHTML = `<tr><td colspan="${4 + rc * (half ? 2 : 1)}" class="hint">Пока никто не зарегистрирован — сначала внесите спортсменов на вкладке «Регистрация».</td></tr>`;
+    validateDraw();
+    return;
+  }
+  drawEntries.forEach(e => {
+    const tr = document.createElement("tr");
+    let cells = `<td>${e.reg_number ?? ""}</td><td>${e.full_name}</td><td>${e.team_name || ""}</td>
+      <td><input type="number" min="1" class="so-input" id="so-${e.id}" value="${e.start_order ?? ""}"
+           onchange="saveStartOrder(${e.id})"></td>`;
+    for (let r = 1; r <= rc; r++) {
+      const cur = zoneOf(e, r);
+      // зона, которой уже нет в списке зон турнира, всё равно показывается
+      const list = (cur && !zones.includes(cur)) ? zones.concat([cur]) : zones;
+      const opts = `<option value="">—</option>` +
+        list.map(z => `<option value="${z}" ${z === cur ? "selected" : ""}>${z}</option>`).join("");
+      cells += `<td><select id="z-${e.id}-${r}" onchange="saveZone(${e.id}, ${r})">${opts}</select></td>`;
+      if (half) {
+        const curH = halfOf(e, r);
+        const hopts = ["", "1", "2"].map(h =>
+          `<option value="${h}" ${h === curH ? "selected" : ""}>${h || "—"}</option>`).join("");
+        cells += `<td><select id="h-${e.id}-${r}" onchange="saveZone(${e.id}, ${r})">${hopts}</select></td>`;
+      }
+    }
+    tr.innerHTML = cells;
+    tbody.appendChild(tr);
+  });
+  validateDraw();
+}
+
+// Зона и полузона одного тура/периода сохраняются вместе — оба значения
+// читаются из своих полей по id, поэтому правка одного не затирает второе.
+async function saveZone(entryId, r) {
+  const zoneSel = document.getElementById(`z-${entryId}-${r}`);
+  const halfSel = document.getElementById(`h-${entryId}-${r}`);
+  const zone = zoneSel ? zoneSel.value : "";
+  const half = halfSel ? halfSel.value : "";
+  try {
+    await apiSend("POST", `${DRAW_API}/entries/${entryId}/zone`, zoneApiPayload(r, zone, half));
+    const e = drawEntries.find(x => x.id === entryId);
+    if (e) storeZone(e, r, zone, half);
+    validateDraw();
+    toast("Зона сохранена ✓");
+  } catch (err) { toast("Не сохранено: " + err.message, false); }
+}
+
+async function saveStartOrder(entryId) {
+  const el = document.getElementById(`so-${entryId}`);
+  const val = el.value.trim();
+  const num = val === "" ? null : parseInt(val, 10);
+  try {
+    await apiSend("POST", `${DRAW_API}/entries/${entryId}/start_order`, { start_order: num });
+    const e = drawEntries.find(x => x.id === entryId);
+    if (e) e.start_order = num;
+    validateDraw();
+    toast("Стартовый номер сохранён ✓");
+  } catch (err) { toast("Не сохранено: " + err.message, false); }
+}
+
+// Проверка ручной жеребьёвки по тем же правилам, что соблюдает автоматическая.
+// Ничего не запрещает (при перестановке двух игроков одной команды они на
+// мгновение неизбежно оказываются в одной зоне), но нарушения сразу видны:
+// красная рамка у спорных полей и список предупреждений над таблицей.
+function validateDraw() {
+  const rc = roundsCount(), zones = zoneList();
+  const warnings = [], summary = [];
+  document.querySelectorAll("#draw-body .conflict").forEach(x => x.classList.remove("conflict"));
+  for (let r = 1; r <= rc; r++) {
+    const byTeam = {};
+    drawEntries.forEach(e => { if (e.team_id) (byTeam[e.team_id] = byTeam[e.team_id] || []).push(e); });
+    Object.values(byTeam).forEach(members => {
+      const byZone = {};
+      members.forEach(e => { const z = zoneOf(e, r); if (z) (byZone[z] = byZone[z] || []).push(e); });
+      Object.keys(byZone).forEach(z => {
+        const ms = byZone[z];
+        if (ms.length > 1) {
+          warnings.push(`${ROUND_LABEL} ${r}: команда «${ms[0].team_name}» — ${ms.map(m => m.full_name).join(" и ")} в одной зоне ${z}`);
+          ms.forEach(m => { const el = document.getElementById(`z-${m.id}-${r}`); if (el) el.classList.add("conflict"); });
+        }
+      });
+    });
+    const all = {}, solo = {};
+    zones.forEach(z => { all[z] = 0; solo[z] = 0; });
+    let none = 0;
+    drawEntries.forEach(e => {
+      const z = zoneOf(e, r);
+      if (!z) { none++; return; }
+      all[z] = (all[z] || 0) + 1;
+      if (!e.team_id) solo[z] = (solo[z] || 0) + 1;
+    });
+    const sv = zones.map(z => solo[z] || 0);
+    if (sv.length && Math.max(...sv) - Math.min(...sv) > 1)
+      warnings.push(`${ROUND_LABEL} ${r}: личники по зонам неравномерно (${zones.map(z => z + " — " + (solo[z] || 0)).join(", ")})`);
+    summary.push(`<b>${ROUND_LABEL} ${r}:</b> ` +
+      zones.map(z => `${z} — ${all[z] || 0} (личников ${solo[z] || 0})`).join("; ") +
+      (none ? `; <span style="color:#c0392b">без зоны — ${none}</span>` : ""));
+  }
+  const seen = {};
+  drawEntries.forEach(e => {
+    if (e.start_order !== null && e.start_order !== undefined && e.start_order !== "")
+      (seen[e.start_order] = seen[e.start_order] || []).push(e);
+  });
+  Object.keys(seen).forEach(n => {
+    if (seen[n].length > 1) {
+      warnings.push(`Стартовый № ${n} повторяется: ${seen[n].map(e => e.full_name).join(", ")}`);
+      seen[n].forEach(e => { const el = document.getElementById(`so-${e.id}`); if (el) el.classList.add("conflict"); });
+    }
+  });
+  document.getElementById("draw-warnings").innerHTML = warnings.length
+    ? `<div class="warn-box">⚠️ ${warnings.join("<br>⚠️ ")}</div>` : "";
+  document.getElementById("draw-summary").innerHTML = drawEntries.length
+    ? "Сейчас в зонах:<br>" + summary.join("<br>") : "";
+}
+
+
 
 // ---------- Разряды (ЕВСК) ----------
 function evskRow(cells) {
@@ -466,17 +613,11 @@ async function createEntry() {
       birth_date: document.getElementById("new-birth").value,
       reg_number: document.getElementById("new-regnum").value ? parseInt(document.getElementById("new-regnum").value) : null,
       team_id: document.getElementById("new-team-select").value || null,
-      start_order: document.getElementById("new-start-order").value ? parseInt(document.getElementById("new-start-order").value) : null,
-      zone_tour1: document.getElementById("new-zone1").value,
-      zone_tour2: document.getElementById("new-zone2").value,
-      half_zone_tour1: document.getElementById("new-halfzone1").value,
-      half_zone_tour2: document.getElementById("new-halfzone2").value,
     });
     document.getElementById("new-fio").value = "";
     document.getElementById("new-razryad").value = "";
     document.getElementById("new-birth").value = "";
     document.getElementById("new-regnum").value = "";
-    document.getElementById("new-start-order").value = "";
     await loadEntries();
     await loadAthletesCache();
     toast("Спортсмен зарегистрирован ✓");
@@ -493,14 +634,10 @@ async function loadEntries() {
   catch (e) { toast("Не удалось загрузить список: " + e.message, false); return; }
   const tbody = document.querySelector("#entries-table tbody");
   tbody.innerHTML = "";
-  const showHz = !!tournamentCache.half_zones_enabled;
   entries.forEach(e => {
     const tr = document.createElement("tr");
-    tr.innerHTML = `<td>${e.reg_number ?? ""}</td><td>${e.full_name}${e.rank_category ? ", " + e.rank_category : ""}</td>
-      <td>${e.rank_category || ""}</td><td>${e.team_name || ""}</td><td>${e.zone_tour1 || ""}</td>
-      <td style="display:${showHz ? "" : "none"}">${e.half_zone_tour1 || ""}</td>
-      <td>${e.zone_tour2 || ""}</td>
-      <td style="display:${showHz ? "" : "none"}">${e.half_zone_tour2 || ""}</td>
+    tr.innerHTML = `<td>${e.reg_number ?? ""}</td><td>${e.full_name}</td>
+      <td>${e.rank_category || ""}</td><td>${e.team_name || ""}</td><td>${e.start_order ?? ""}</td>
       <td class="no-print"><button class="link danger-link" onclick="deleteEntry(${e.id})">удалить</button></td>`;
     tbody.appendChild(tr);
   });

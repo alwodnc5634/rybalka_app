@@ -35,7 +35,15 @@
   .place-1 { font-weight: 700; color: #b8860b; }
   .place-2 { font-weight: 700; color: #808080; }
   .place-3 { font-weight: 700; color: #a0522d; }
-  .draw-table select { min-width: 70px; padding: 3px 6px; }
+  /* Лист протокола: на экране — карточка, при печати — отдельная страница */
+  .printsheet { background: white; border: 1px solid var(--border); border-radius: 10px;
+    padding: 20px; margin-bottom: 16px; overflow-x: auto; }
+  .printsheet + .printsheet { page-break-before: always; }
+  .proto-head { text-align: center; margin-bottom: 14px; font-size: 13px; }
+  .proto-head .proto-title { font-weight: 700; font-size: 15px; }
+  .proto-head .proto-kind { font-weight: 600; margin-top: 2px; }
+  .printsheet .protocol-table th, .printsheet .protocol-table td { padding: 4px 6px; font-size: 12px; }
+  .signatures { margin-top: 26px; font-size: 13px; }
   /* Одна карта = один физический лист А4, ДВЕ стороны (страницы печати) —
      лицевая и оборотная. Обе всегда идут одна за другой (page-break-after:
      always), кроме самой последней страницы всего задания на печать. */
@@ -59,6 +67,11 @@
     header, nav, .no-print { display: none !important; }
     body { background: white; } main { padding: 0; max-width: 100%; } .card { border: none; padding: 0; }
   }
+  .draw-table select { min-width: 70px; padding: 3px 6px; }
+  .draw-table .so-input { width: 72px; padding: 3px 6px; }
+  .conflict { border: 2px solid #c0392b !important; background: #fdecea !important; }
+  .warn-box { background: #fff4e5; border: 1px solid #f0b37e; color: #7a4a00; border-radius: 8px;
+    padding: 10px 12px; margin-bottom: 12px; font-size: 13px; line-height: 1.5; }
 </style>
 </head>
 <body>
@@ -164,19 +177,24 @@
       <h2>Жеребьёвка — зоны по периодам</h2>
       <p class="hint">Проводится ПОСЛЕ регистрации. У каждого периода своя зона: спортсмены переходят из зоны в зону
         между периодами. Можно заполнить вручную (выпадающие списки в таблице сохраняются сразу) или нажать кнопку
-        автоматической жеребьёвки — она случайно разделит участников на группы и проведёт их по зонам с ротацией,
-        а заодно назначит стартовые номера.</p>
+        автоматической жеребьёвки. Автоматическая жеребьёвка проводится <b>по жребию отдельно на каждый период</b>
+        и соблюдает правила: <b>участники одной команды всегда в разных зонах</b> (кто из них в какую — жребий),
+        <b>личники делятся по зонам поровну</b> (при остатке разница не больше одного человека, лишний — по жребию).
+        Спортсмен может снова попасть в ту же зону в другом периоде — как и при ручной жеребьёвке.
+        Стартовые номера назначаются заодно.</p>
       <div id="draw-block" class="no-print" style="display:none; margin-bottom:12px">
         <button class="primary" onclick="runDraw()">🎲 Провести жеребьёвку автоматически</button>
-        <span class="hint">Перезапишет зоны во всех периодах и стартовые номера у ВСЕХ спортсменов. После этого
+        <span class="hint">Разыграет заново зоны во всех периодах и стартовые номера у ВСЕХ спортсменов. После этого
           можно поправить отдельные строки вручную.</span>
       </div>
       <p class="hint" id="draw-autooff" style="display:none">Автоматическая жеребьёвка выключена в данных турнира —
         заполните зоны вручную либо включите галочку «Автоматическая жеребьёвка» на вкладке «Регистрация».</p>
+      <div id="draw-warnings"></div>
       <table class="draw-table">
         <thead><tr id="draw-head"></tr></thead>
         <tbody id="draw-body"></tbody>
       </table>
+      <div id="draw-summary" class="hint" style="margin-top:10px"></div>
     </div>
   </section>
 
@@ -222,24 +240,21 @@
 
   <!-- ПРОТОКОЛ -->
   <section id="tab-results" style="display:none">
-    <div class="card">
-      <div style="display:flex; justify-content:flex-end; margin-bottom:12px" class="no-print">
+    <div class="card no-print">
+      <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap">
+        <label style="font-size:13px; color:#555">Показать:</label>
+        <select id="proto-kind" onchange="loadResultsTab()">
+          <option value="all">все три протокола</option>
+          <option value="lich">только личный зачёт</option>
+          <option value="team">только командный зачёт</option>
+          <option value="kl">только командно-личный</option>
+        </select>
         <button class="primary" onclick="window.print()">🖨️ Печать</button>
+        <span class="hint" style="margin:0">Протоколы построены по образцу официального
+          протокола Чемпионата Вологодской области. Каждый печатается с новой страницы.</span>
       </div>
-      <div style="text-align:center; margin-bottom:16px">
-        <div style="font-weight:700; font-size:15px" id="ph-title">Протокол технических результатов</div>
-        <div style="font-weight:600" id="ph-status"></div>
-        <div id="ph-discipline"></div>
-        <div style="display:flex; justify-content:space-between; padding:0 4px"><span id="ph-date"></span><span id="ph-venue"></span></div>
-      </div>
-      <h3>Личный зачёт</h3>
-      <div id="results-container"></div>
-      <div id="team-results-block" style="display:none">
-        <h3>Командный зачёт</h3>
-        <div id="team-results-container"></div>
-      </div>
-      <div class="signatures" id="signatures" style="margin-top:28px; font-size:13px"></div>
     </div>
+    <div id="protocols-root"></div>
   </section>
 
   <!-- РАЗРЯДЫ (ЕВСК) -->
@@ -412,61 +427,151 @@ async function saveTournament() {
   }
 }
 
-// ---------- Жеребьёвка ----------
+// ---------- Жеребьёвка (ручная и автоматическая) ----------
+let drawEntries = [];
+const ROUND_LABEL = "Период";
+function roundsCount() { return periodsCount(); }
+function zoneOf(e, r) { return (e.zones || {})[String(r)] || ""; }
+function halfOf(e, r) { return (e.half_zones || {})[String(r)] || ""; }
+function storeZone(e, r, z, h) {
+  e.zones = e.zones || {}; e.half_zones = e.half_zones || {};
+  e.zones[String(r)] = z || null; e.half_zones[String(r)] = h || null;
+}
+function zoneApiPayload(r, zone, half) { return { period_number: r, zone, half_zone: half }; }
+const DRAW_API = "/api/forel";
+
 async function loadDrawTab() {
-  let entries;
-  try { entries = await apiGet("/api/forel/entries"); }
+  try { drawEntries = await apiGet(DRAW_API + "/entries"); }
   catch (e) { toast("Не удалось загрузить список: " + e.message, false); return; }
-
-  const pc = periodsCount();
+  renderDrawTable();
+}
+function renderDrawTable() {
+  const rc = roundsCount();
   const half = !!tournamentCache.half_zones_enabled;
-  document.getElementById("draw-block").style.display = tournamentCache.auto_draw_enabled ? "block" : "none";
-  document.getElementById("draw-autooff").style.display = tournamentCache.auto_draw_enabled ? "none" : "block";
-
+  const auto = !!tournamentCache.auto_draw_enabled;
+  document.getElementById("draw-block").style.display = auto ? "block" : "none";
+  document.getElementById("draw-autooff").style.display = auto ? "none" : "block";
   let head = `<th>№</th><th>ФИО</th><th>Команда</th><th>Старт. №</th>`;
-  for (let p = 1; p <= pc; p++) {
-    head += `<th>Зона, период ${p}</th>`;
-    if (half) head += `<th>Полузона ${p}</th>`;
+  for (let r = 1; r <= rc; r++) {
+    head += `<th>Зона, ${ROUND_LABEL.toLowerCase()} ${r}</th>`;
+    if (half) head += `<th>Полузона ${r}</th>`;
   }
   document.getElementById("draw-head").innerHTML = head;
-
   const zones = zoneList();
   const tbody = document.getElementById("draw-body");
   tbody.innerHTML = "";
-  entries.forEach(e => {
+  if (!drawEntries.length) {
+    tbody.innerHTML = `<tr><td colspan="${4 + rc * (half ? 2 : 1)}" class="hint">Пока никто не зарегистрирован — сначала внесите спортсменов на вкладке «Регистрация».</td></tr>`;
+    validateDraw();
+    return;
+  }
+  drawEntries.forEach(e => {
     const tr = document.createElement("tr");
     let cells = `<td>${e.reg_number ?? ""}</td><td>${e.full_name}</td><td>${e.team_name || ""}</td>
-                 <td>${e.start_order ?? ""}</td>`;
-    for (let p = 1; p <= pc; p++) {
-      const cur = (e.zones || {})[String(p)] || "";
+      <td><input type="number" min="1" class="so-input" id="so-${e.id}" value="${e.start_order ?? ""}"
+           onchange="saveStartOrder(${e.id})"></td>`;
+    for (let r = 1; r <= rc; r++) {
+      const cur = zoneOf(e, r);
+      // зона, которой уже нет в списке зон турнира, всё равно показывается
+      const list = (cur && !zones.includes(cur)) ? zones.concat([cur]) : zones;
       const opts = `<option value="">—</option>` +
-        zones.map(z => `<option value="${z}" ${z === cur ? "selected" : ""}>${z}</option>`).join("");
-      cells += `<td><select id="z-${e.id}-${p}" onchange="saveZone(${e.id}, ${p})">${opts}</select></td>`;
+        list.map(z => `<option value="${z}" ${z === cur ? "selected" : ""}>${z}</option>`).join("");
+      cells += `<td><select id="z-${e.id}-${r}" onchange="saveZone(${e.id}, ${r})">${opts}</select></td>`;
       if (half) {
-        const curH = (e.half_zones || {})[String(p)] || "";
+        const curH = halfOf(e, r);
         const hopts = ["", "1", "2"].map(h =>
           `<option value="${h}" ${h === curH ? "selected" : ""}>${h || "—"}</option>`).join("");
-        cells += `<td><select id="h-${e.id}-${p}" onchange="saveZone(${e.id}, ${p})">${hopts}</select></td>`;
+        cells += `<td><select id="h-${e.id}-${r}" onchange="saveZone(${e.id}, ${r})">${hopts}</select></td>`;
       }
     }
     tr.innerHTML = cells;
     tbody.appendChild(tr);
   });
-  if (!entries.length) {
-    tbody.innerHTML = `<tr><td colspan="9" class="hint">Пока никто не зарегистрирован — сначала внесите спортсменов на вкладке «Регистрация».</td></tr>`;
-  }
+  validateDraw();
 }
-// Зона и полузона одного периода сохраняются вместе — оба значения читаются
-// из своих полей по id, поэтому правка одного не затирает второе.
-async function saveZone(entryId, period) {
-  const zoneSel = document.getElementById(`z-${entryId}-${period}`);
-  const halfSel = document.getElementById(`h-${entryId}-${period}`);
-  const payload = { period_number: period, zone: zoneSel ? zoneSel.value : "" };
-  if (halfSel) payload.half_zone = halfSel.value;
+
+// Зона и полузона одного тура/периода сохраняются вместе — оба значения
+// читаются из своих полей по id, поэтому правка одного не затирает второе.
+async function saveZone(entryId, r) {
+  const zoneSel = document.getElementById(`z-${entryId}-${r}`);
+  const halfSel = document.getElementById(`h-${entryId}-${r}`);
+  const zone = zoneSel ? zoneSel.value : "";
+  const half = halfSel ? halfSel.value : "";
   try {
-    await apiSend("POST", `/api/forel/entries/${entryId}/zone`, payload);
+    await apiSend("POST", `${DRAW_API}/entries/${entryId}/zone`, zoneApiPayload(r, zone, half));
+    const e = drawEntries.find(x => x.id === entryId);
+    if (e) storeZone(e, r, zone, half);
+    validateDraw();
     toast("Зона сохранена ✓");
-  } catch (e) { toast("Не сохранено: " + e.message, false); }
+  } catch (err) { toast("Не сохранено: " + err.message, false); }
+}
+
+async function saveStartOrder(entryId) {
+  const el = document.getElementById(`so-${entryId}`);
+  const val = el.value.trim();
+  const num = val === "" ? null : parseInt(val, 10);
+  try {
+    await apiSend("POST", `${DRAW_API}/entries/${entryId}/start_order`, { start_order: num });
+    const e = drawEntries.find(x => x.id === entryId);
+    if (e) e.start_order = num;
+    validateDraw();
+    toast("Стартовый номер сохранён ✓");
+  } catch (err) { toast("Не сохранено: " + err.message, false); }
+}
+
+// Проверка ручной жеребьёвки по тем же правилам, что соблюдает автоматическая.
+// Ничего не запрещает (при перестановке двух игроков одной команды они на
+// мгновение неизбежно оказываются в одной зоне), но нарушения сразу видны:
+// красная рамка у спорных полей и список предупреждений над таблицей.
+function validateDraw() {
+  const rc = roundsCount(), zones = zoneList();
+  const warnings = [], summary = [];
+  document.querySelectorAll("#draw-body .conflict").forEach(x => x.classList.remove("conflict"));
+  for (let r = 1; r <= rc; r++) {
+    const byTeam = {};
+    drawEntries.forEach(e => { if (e.team_id) (byTeam[e.team_id] = byTeam[e.team_id] || []).push(e); });
+    Object.values(byTeam).forEach(members => {
+      const byZone = {};
+      members.forEach(e => { const z = zoneOf(e, r); if (z) (byZone[z] = byZone[z] || []).push(e); });
+      Object.keys(byZone).forEach(z => {
+        const ms = byZone[z];
+        if (ms.length > 1) {
+          warnings.push(`${ROUND_LABEL} ${r}: команда «${ms[0].team_name}» — ${ms.map(m => m.full_name).join(" и ")} в одной зоне ${z}`);
+          ms.forEach(m => { const el = document.getElementById(`z-${m.id}-${r}`); if (el) el.classList.add("conflict"); });
+        }
+      });
+    });
+    const all = {}, solo = {};
+    zones.forEach(z => { all[z] = 0; solo[z] = 0; });
+    let none = 0;
+    drawEntries.forEach(e => {
+      const z = zoneOf(e, r);
+      if (!z) { none++; return; }
+      all[z] = (all[z] || 0) + 1;
+      if (!e.team_id) solo[z] = (solo[z] || 0) + 1;
+    });
+    const sv = zones.map(z => solo[z] || 0);
+    if (sv.length && Math.max(...sv) - Math.min(...sv) > 1)
+      warnings.push(`${ROUND_LABEL} ${r}: личники по зонам неравномерно (${zones.map(z => z + " — " + (solo[z] || 0)).join(", ")})`);
+    summary.push(`<b>${ROUND_LABEL} ${r}:</b> ` +
+      zones.map(z => `${z} — ${all[z] || 0} (личников ${solo[z] || 0})`).join("; ") +
+      (none ? `; <span style="color:#c0392b">без зоны — ${none}</span>` : ""));
+  }
+  const seen = {};
+  drawEntries.forEach(e => {
+    if (e.start_order !== null && e.start_order !== undefined && e.start_order !== "")
+      (seen[e.start_order] = seen[e.start_order] || []).push(e);
+  });
+  Object.keys(seen).forEach(n => {
+    if (seen[n].length > 1) {
+      warnings.push(`Стартовый № ${n} повторяется: ${seen[n].map(e => e.full_name).join(", ")}`);
+      seen[n].forEach(e => { const el = document.getElementById(`so-${e.id}`); if (el) el.classList.add("conflict"); });
+    }
+  });
+  document.getElementById("draw-warnings").innerHTML = warnings.length
+    ? `<div class="warn-box">⚠️ ${warnings.join("<br>⚠️ ")}</div>` : "";
+  document.getElementById("draw-summary").innerHTML = drawEntries.length
+    ? "Сейчас в зонах:<br>" + summary.join("<br>") : "";
 }
 
 // ---------- Разряды (ЕВСК) ----------
@@ -780,78 +885,143 @@ async function loadResultsTab() {
     judges = await apiGet("/api/forel/judges");
   } catch (e) { toast("Не удалось загрузить протокол: " + e.message, false); return; }
 
-  document.getElementById("ph-status").textContent = t.status || t.name_full || "";
-  document.getElementById("ph-discipline").textContent = (t.discipline || "") + (t.gender_group ? " (" + t.gender_group + ")" : "");
-  document.getElementById("ph-date").textContent = fmtDate(t.date_tour1);
-  document.getElementById("ph-venue").textContent = t.venue || "";
-
   const pc = results.periods_count || t.periods_count || 3;
-
-  // Столбцы как в реальном протоколе: на каждый период — зона, рыб, баллы
-  // (сумма длины) и место; затем сумма мест и итоговое место.
-  let cols = ["Место", "№", "ФИО", "Разряд до", "Разряд после", "Команда"];
-  for (let p = 1; p <= pc; p++) {
-    cols.push(`Зона ${p}п`, `Рыб ${p}п`, `Баллы ${p}п`, `Место ${p}п`);
-  }
-  cols.push("Сумма мест", "Всего рыб", "Сумма см", "Итоговое место");
-
-  let html = `<table class="protocol-table"><thead><tr>${cols.map(c => `<th>${c}</th>`).join("")}</tr></thead><tbody>`;
-  results.individuals.forEach(r => {
-    html += "<tr>";
-    html += `<td class="${placeClass(r.final_place)}">${fmtPlace(r.final_place)}</td>`;
-    html += `<td>${r.reg_number ?? ""}</td>`;
-    html += `<td class="name-cell">${r.full_name}${r.sanction ? " <span class='badge'>снят</span>" : ""}</td>`;
-    html += `<td>${r.rank_before || r.rank_category || ""}</td>`;
-    html += `<td${(r.rank_after && r.rank_after !== r.rank_before) ? ' class="place-1"' : ''}>${r.rank_after || r.rank_category || ""}</td>`;
-    html += `<td>${r.team_name || ""}</td>`;
-    const byNum = {};
-    (r.periods || []).forEach(p => byNum[p.period_number] = p);
-    for (let p = 1; p <= pc; p++) {
-      const pd = byNum[p];
-      if (!pd) { html += `<td>—</td><td>—</td><td>—</td><td>—</td>`; continue; }
-      html += `<td>${pd.zone || ""}${pd.half_zone ? "/" + pd.half_zone : ""}</td>`;
-      html += `<td>${pd.fish_count}</td>`;
-      html += `<td>${pd.disqualified ? "снят" : pd.total_length}</td>`;
-      html += `<td>${fmtPlace(pd.period_place)}</td>`;
-    }
-    html += `<td>${fmtPlace(r.sum_period_places)}</td>`;
-    html += `<td>${r.sum_fish ?? ""}</td>`;
-    html += `<td>${r.sum_length ?? ""}</td>`;
-    html += `<td class="${placeClass(r.final_place)}">${fmtPlace(r.final_place)}</td>`;
-    html += "</tr>";
-  });
-  html += "</tbody></table>";
-  document.getElementById("results-container").innerHTML = html;
-
-  // Командный зачёт
+  const kind = document.getElementById("proto-kind").value;
+  const ind = results.individuals || [];
   const teams = results.teams || [];
-  document.getElementById("team-results-block").style.display = teams.length ? "block" : "none";
-  if (teams.length) {
-    let th = `<table class="protocol-table"><thead><tr>
-      <th>Место</th><th>Команда</th><th>Состав</th><th>Сумма мест</th><th>Рыб</th><th>Сумма см</th>
-      </tr></thead><tbody>`;
-    teams.forEach(tm => {
-      const names = tm.members.map(m => `${m.full_name} (${fmtPlace(m.final_place)})`).join(", ");
-      th += `<tr>
-        <td class="${placeClass(tm.team_place)}">${fmtPlace(tm.team_place)}</td>
-        <td class="name-cell">${tm.name}</td>
-        <td class="name-cell">${names}</td>
-        <td>${fmtPlace(tm.team_sum_places)}</td>
-        <td>${tm.team_sum_fish ?? ""}</td>
-        <td>${tm.team_sum_length ?? ""}</td>
-      </tr>`;
-    });
-    th += "</tbody></table>";
-    document.getElementById("team-results-container").innerHTML = th;
+
+  // Шапка — как в официальном протоколе: название, дата и место одной
+  // строкой, затем вид зачёта в скобках.
+  function header(kindTitle) {
+    const line2 = [fmtDate(t.date_tour1), t.venue].filter(Boolean).join(" ");
+    return `<div class="proto-head">
+      <div class="proto-title">Протокол технических результатов ${t.name_full || ""}</div>
+      ${line2 ? `<div>${line2}</div>` : ""}
+      ${t.gender_group ? `<div>${t.gender_group}</div>` : ""}
+      <div class="proto-kind">(${kindTitle})</div>
+    </div>`;
+  }
+  function sign() {
+    return `<div class="signatures">` + judges.map(j => `
+      <div style="display:flex; align-items:flex-end; gap:8px; margin-bottom:22px">
+        <div style="min-width:280px">${j.role}${j.category ? ", " + j.category : ""}</div>
+        <div style="flex:1; border-bottom:1px solid #333; min-width:120px; text-align:center; font-size:11px; color:#888">подпись</div>
+        <div style="min-width:170px; text-align:center">${j.full_name || ""}</div>
+      </div>`).join("") + `</div>`;
+  }
+  // ячейка "Количество баллов/Место" — как в шапке официального протокола
+  function ptsPlace(pd) {
+    if (!pd) return "—";
+    if (pd.disqualified) return "снят";
+    return `${pd.total_length}/${fmtPlace(pd.period_place)}`;
+  }
+  function byNum(r) {
+    const m = {};
+    (r.periods || []).forEach(p => m[p.period_number] = p);
+    return m;
   }
 
-  const sigDiv = document.getElementById("signatures");
-  sigDiv.innerHTML = judges.map(j => `
-    <div style="display:flex; align-items:flex-end; gap:8px; margin-bottom:22px">
-      <div style="min-width:260px">${j.role}</div>
-      <div style="flex:1; border-bottom:1px solid #333; min-width:120px; text-align:center; font-size:11px; color:#888">подпись</div>
-      <div style="min-width:160px; text-align:center">(${j.full_name || ""})</div>
-    </div>`).join("");
+  // ---------- 1. ЛИЧНЫЙ ЗАЧЁТ ----------
+  function protocolLich() {
+    let cols = ["№", "ФИО", "Разряд до", "Разряд после"];
+    for (let p = 1; p <= pc; p++) cols.push(`Количество баллов/Место ${p} период`);
+    cols.push("Сумма мест", "Итоговое место");
+    let h = `<table class="protocol-table"><thead><tr>${cols.map(c => `<th>${c}</th>`).join("")}</tr></thead><tbody>`;
+    ind.forEach((r, i) => {
+      const m = byNum(r);
+      h += `<tr><td>${i + 1}</td>`;
+      h += `<td class="name-cell">${r.full_name}${r.sanction ? " <span class='badge'>снят</span>" : ""}</td>`;
+      h += `<td>${r.rank_before || ""}</td>`;
+      h += `<td${(r.rank_after && r.rank_after !== r.rank_before) ? ' class="place-1"' : ''}>${r.rank_after || ""}</td>`;
+      for (let p = 1; p <= pc; p++) h += `<td>${ptsPlace(m[p])}</td>`;
+      h += `<td>${fmtPlace(r.sum_period_places)}</td>`;
+      h += `<td class="${placeClass(r.final_place)}">${fmtPlace(r.final_place)}</td></tr>`;
+    });
+    return `<div class="printsheet">${header("Личный зачет")}${h}</tbody></table>${sign()}</div>`;
+  }
+
+  // ---------- 2. КОМАНДНЫЙ ЗАЧЁТ ----------
+  // № команды, название, сумма мест и место команды объединены по строкам
+  // её участников — ровно как в официальном протоколе.
+  function protocolTeam() {
+    let cols = ["№пп", "Наименование команды", "ФИО", "Разряд до", "Разряд после"];
+    for (let p = 1; p <= pc; p++) cols.push("Зона", `Количество баллов/Место ${p} период`);
+    cols.push("Сумма мест", "Итоговое место");
+    let h = `<table class="protocol-table"><thead><tr>${cols.map(c => `<th>${c}</th>`).join("")}</tr></thead><tbody>`;
+    teams.forEach((tm, ti) => {
+      const members = tm.members.map(mm => ind.find(x => x.id === mm.entry_id)).filter(Boolean);
+      const n = Math.max(members.length, 1);
+      members.forEach((r, idx) => {
+        const m = byNum(r);
+        h += "<tr>";
+        if (idx === 0) {
+          h += `<td rowspan="${n}">${ti + 1}</td>`;
+          h += `<td rowspan="${n}" class="name-cell">${tm.name}</td>`;
+        }
+        h += `<td class="name-cell">${r.full_name}</td>`;
+        h += `<td>${r.rank_before || ""}</td>`;
+        h += `<td${(r.rank_after && r.rank_after !== r.rank_before) ? ' class="place-1"' : ''}>${r.rank_after || ""}</td>`;
+        for (let p = 1; p <= pc; p++) {
+          const pd = m[p];
+          h += `<td>${pd ? (pd.zone || "") + (pd.half_zone ? "/" + pd.half_zone : "") : ""}</td>`;
+          h += `<td>${ptsPlace(pd)}</td>`;
+        }
+        if (idx === 0) {
+          h += `<td rowspan="${n}">${fmtPlace(tm.team_sum_places)}</td>`;
+          h += `<td rowspan="${n}" class="${placeClass(tm.team_place)}">${fmtPlace(tm.team_place)}</td>`;
+        }
+        h += "</tr>";
+      });
+    });
+    return `<div class="printsheet">${header("Командный зачет")}${h}</tbody></table>${sign()}</div>`;
+  }
+
+  // ---------- 3. КОМАНДНО-ЛИЧНЫЙ ----------
+  function protocolKL() {
+    let cols = ["№пп", "Наименование команды", "ФИО", "Разряд до", "Разряд после"];
+    for (let p = 1; p <= pc; p++) cols.push(`Зона ${p}пер`, `Количество баллов ${p} период`, "Место личн");
+    cols.push("Сумма мест личных", "Место личное", "Сумма мест ком-е", "Место ком-е");
+    let h = `<table class="protocol-table"><thead><tr>${cols.map(c => `<th>${c}</th>`).join("")}</tr></thead><tbody>`;
+    teams.forEach((tm, ti) => {
+      const members = tm.members.map(mm => ind.find(x => x.id === mm.entry_id)).filter(Boolean);
+      const n = Math.max(members.length, 1);
+      members.forEach((r, idx) => {
+        const m = byNum(r);
+        h += "<tr>";
+        if (idx === 0) {
+          h += `<td rowspan="${n}">${ti + 1}</td>`;
+          h += `<td rowspan="${n}" class="name-cell">${tm.name}</td>`;
+        }
+        h += `<td class="name-cell">${r.full_name}</td>`;
+        h += `<td>${r.rank_before || ""}</td>`;
+        h += `<td${(r.rank_after && r.rank_after !== r.rank_before) ? ' class="place-1"' : ''}>${r.rank_after || ""}</td>`;
+        for (let p = 1; p <= pc; p++) {
+          const pd = m[p];
+          h += `<td>${pd ? (pd.zone || "") + (pd.half_zone ? "/" + pd.half_zone : "") : ""}</td>`;
+          h += `<td>${pd ? (pd.disqualified ? "снят" : pd.total_length) : "—"}</td>`;
+          h += `<td>${pd ? fmtPlace(pd.period_place) : "—"}</td>`;
+        }
+        h += `<td>${fmtPlace(r.sum_period_places)}</td>`;
+        h += `<td class="${placeClass(r.final_place)}">${fmtPlace(r.final_place)}</td>`;
+        if (idx === 0) {
+          h += `<td rowspan="${n}">${fmtPlace(tm.team_sum_places)}</td>`;
+          h += `<td rowspan="${n}" class="${placeClass(tm.team_place)}">${fmtPlace(tm.team_place)}</td>`;
+        }
+        h += "</tr>";
+      });
+    });
+    return `<div class="printsheet">${header("Командный/Личный зачет")}${h}</tbody></table>${sign()}</div>`;
+  }
+
+  const parts = [];
+  if (kind === "all" || kind === "lich") parts.push(protocolLich());
+  if (teams.length && (kind === "all" || kind === "team")) parts.push(protocolTeam());
+  if (teams.length && (kind === "all" || kind === "kl")) parts.push(protocolKL());
+  if (!teams.length && (kind === "team" || kind === "kl")) {
+    parts.push(`<div class="card"><p class="hint">В турнире нет ни одной команды — командные протоколы
+      не строятся. Команды добавляются на вкладке «Регистрация».</p></div>`);
+  }
+  document.getElementById("protocols-root").innerHTML = parts.join("");
 }
 
 // ---------- init ----------

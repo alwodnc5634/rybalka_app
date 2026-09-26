@@ -129,103 +129,140 @@ def _evsk_tournament_year(date_tour1):
         return None
 
 
-def _run_zone_draw(conn):
-    """Общая жеребьёвка для «Форели» и «зонного весового» движка: случайно
-    назначает ЗОНУ (и подзону, если half_zones_enabled) на каждый тур —
-    равномерно (round-robin по перемешанному списку зон) — и ОДИН РАЗ,
-    независимо от тура, очерёдность старта всем участникам. Не блокирует
-    последующую ручную правку отдельных записей (кнопка "Провести
-    жеребьёвку" просто перезаписывает текущие значения)."""
-    t = conn.execute("SELECT * FROM tournament WHERE id=1").fetchone()
-    zones = [z.strip() for z in (t["zones"] or "").split(",") if z.strip()]
-    if not zones:
-        raise ApiError("не заданы зоны турнира — заполните список зон в общих данных")
-    tours_count = t["tours_count"]
-    half_enabled = bool(t["half_zones_enabled"])
+def _draw_groups(conn, zone_count):
+    """Участники для жеребьёвки: {команда: [участники]} и список личников.
+    Если в команде больше участников, чем зон, развести их по разным зонам
+    невозможно — программа честно отказывает и называет команду."""
+    rows = conn.execute("SELECT id, team_id FROM entries").fetchall()
+    by_team, solo = {}, []
+    for r in rows:
+        if r["team_id"]:
+            by_team.setdefault(r["team_id"], []).append(r["id"])
+        else:
+            solo.append(r["id"])
+    too_big = []
+    for tid, members in by_team.items():
+        if len(members) > zone_count:
+            name = conn.execute("SELECT name FROM teams WHERE id=?", (tid,)).fetchone()
+            too_big.append("«%s» (%d участников)" % (name["name"] if name else tid, len(members)))
+    if too_big:
+        raise ApiError(
+            "в команде %s больше участников, чем зон (%d) — развести их по разным зонам "
+            "невозможно. Добавьте зоны в общих данных турнира или уменьшите состав команды."
+            % (", ".join(too_big), zone_count))
+    return by_team, solo
 
-    entry_ids = [r["id"] for r in conn.execute("SELECT id FROM entries").fetchall()]
-    if not entry_ids:
-        return 0
 
-    # очерёдность старта — один раз для всех участников
+def _draw_round(by_team, solo, zones):
+    """ОДНА независимая жеребьёвка — на один период (или тур). Всё по жребию:
+
+      1. Участники одной команды — СТРОГО В РАЗНЫХ ЗОНАХ: каждой команде
+         достаются разные зоны, а кто из её участников в какую — жребий.
+      2. Личники — ПОРОВНУ по зонам: 9 на 3 зоны -> по 3; 10 -> 3/3/4, и
+         какой зоне достанется лишний — тоже жребий (среди наименее
+         загруженных, чтобы зоны в целом оставались ровными).
+      3. Порядок команд, личников и выбор зон при равной загрузке — случайны.
+
+    Каждый период разыгрывается заново, поэтому спортсмен может снова
+    попасть в ту же зону, что и в прошлом периоде — так же, как в реальном
+    протоколе (в v8-первой сборке был принудительный сдвиг по кругу А->Б->В,
+    из-за чего жребий фактически решал только 1-й период)."""
+    load = {z: 0 for z in zones}
+    result = {}
+
+    def least_loaded(k):
+        cand = list(zones)
+        random.shuffle(cand)                 # жребий среди равно загруженных
+        cand.sort(key=lambda z: load[z])     # сортировка устойчивая
+        return cand[:k]
+
+    team_ids = list(by_team)
+    random.shuffle(team_ids)
+    for tid in team_ids:
+        members = by_team[tid][:]
+        random.shuffle(members)
+        chosen = least_loaded(len(members))
+        random.shuffle(chosen)
+        for eid, z in zip(members, chosen):
+            result[eid] = z
+            load[z] += 1
+
+    solo = solo[:]
+    random.shuffle(solo)
+    base, extra = divmod(len(solo), len(zones))
+    quota = {z: base for z in zones}
+    for z in least_loaded(extra):
+        quota[z] += 1
+    places = [z for z in zones for _ in range(quota[z])]
+    random.shuffle(places)
+    for eid, z in zip(solo, places):
+        result[eid] = z
+        load[z] += 1
+    return result
+
+
+def _assign_start_order(conn, entry_ids):
     shuffled = entry_ids[:]
     random.shuffle(shuffled)
     for i, eid in enumerate(shuffled, start=1):
         conn.execute("UPDATE entries SET start_order=? WHERE id=?", (i, eid))
 
-    for tn in range(1, tours_count + 1):
-        pool = entry_ids[:]
-        random.shuffle(pool)
-        zone_groups = {z: [] for z in zones}
-        for i, eid in enumerate(pool):
-            zone_groups[zones[i % len(zones)]].append(eid)
-        for zone, members in zone_groups.items():
-            if half_enabled:
-                random.shuffle(members)
-                for i, eid in enumerate(members):
-                    half = "1" if i % 2 == 0 else "2"
-                    conn.execute(
-                        "INSERT INTO entry_zones (entry_id, tour_number, zone, half_zone) VALUES (?,?,?,?) "
-                        "ON CONFLICT(entry_id, tour_number) DO UPDATE SET zone=excluded.zone, half_zone=excluded.half_zone",
-                        (eid, tn, zone, half),
-                    )
-            else:
-                for eid in members:
-                    conn.execute(
-                        "INSERT INTO entry_zones (entry_id, tour_number, zone, half_zone) VALUES (?,?,?,NULL) "
-                        "ON CONFLICT(entry_id, tour_number) DO UPDATE SET zone=excluded.zone, half_zone=NULL",
-                        (eid, tn, zone),
-                    )
+
+def _write_round(conn, assignment, zones, half_enabled, key_col, number):
+    """Записывает результат одной жеребьёвки; полузоны внутри зоны — тоже
+    по жребию (перемешивание, затем поочерёдно 1/2)."""
+    by_zone = {z: [] for z in zones}
+    for eid, z in assignment.items():
+        by_zone[z].append(eid)
+    for zone, members in by_zone.items():
+        random.shuffle(members)
+        for i, eid in enumerate(members):
+            half = ("1" if i % 2 == 0 else "2") if half_enabled else None
+            conn.execute(
+                "INSERT INTO entry_zones (entry_id, %s, zone, half_zone) VALUES (?,?,?,?) "
+                "ON CONFLICT(entry_id, %s) DO UPDATE SET zone=excluded.zone, "
+                "half_zone=excluded.half_zone" % (key_col, key_col),
+                (eid, number, zone, half),
+            )
+
+
+def _run_zone_draw(conn):
+    """Жеребьёвка «зонного весового» движка (донка/поплавок/блесна/мормышка,
+    а также спиннинг с берега в весовом режиме): на КАЖДЫЙ ТУР — отдельная
+    жеребьёвка (см. _draw_round), плюс очерёдность старта."""
+    t = conn.execute("SELECT * FROM tournament WHERE id=1").fetchone()
+    zones = [z.strip() for z in (t["zones"] or "").split(",") if z.strip()]
+    if not zones:
+        raise ApiError("не заданы зоны турнира — заполните список зон в общих данных")
+    entry_ids = [r["id"] for r in conn.execute("SELECT id FROM entries").fetchall()]
+    if not entry_ids:
+        return 0
+    by_team, solo = _draw_groups(conn, len(zones))
+    _assign_start_order(conn, entry_ids)
+    for tn in range(1, t["tours_count"] + 1):
+        _write_round(conn, _draw_round(by_team, solo, zones), zones,
+                     bool(t["half_zones_enabled"]), "tour_number", tn)
     conn.commit()
     return len(entry_ids)
 
 
 def _run_forel_draw(conn):
-    """Жеребьёвка для «Ловли спиннингом с берега» (v8): туров нет, зона
-    назначается НА КАЖДЫЙ ПЕРИОД, причём с РОТАЦИЕЙ — спортсмены переходят
-    из зоны в зону между периодами (так это и делается на реальных
-    соревнованиях, и так устроен реальный протокол: "Зона 1пер", "Зона
-    2пер", "Зона 3пер" у одного человека разные).
-
-    Как считается: участники случайно делятся на N примерно равных групп
-    (N = число зон); в периоде p группа i уходит в зону с номером
-    (i + p - 1) mod N. Это гарантирует и равномерность в каждом периоде, и
-    то, что одна и та же группа не сидит всё соревнование в одной зоне.
-    Ручная правка отдельных записей после жеребьёвки остаётся доступной."""
+    """Жеребьёвка «Ловли спиннингом с берега» (v8): туров нет, зона
+    назначается НА КАЖДЫЙ ПЕРИОД — и каждый период разыгрывается по жребию
+    заново (см. _draw_round): участники одной команды строго в разных
+    зонах, личники поровну. Ручная правка после жеребьёвки доступна."""
     t = conn.execute("SELECT * FROM tournament WHERE id=1").fetchone()
     zones = [z.strip() for z in (t["zones"] or "").split(",") if z.strip()]
     if not zones:
         raise ApiError("не заданы зоны турнира — заполните список зон в общих данных")
-    periods_count = t["periods_count"]
-    half_enabled = bool(t["half_zones_enabled"])
-
     entry_ids = [r["id"] for r in conn.execute("SELECT id FROM entries").fetchall()]
     if not entry_ids:
         return 0
-
-    shuffled = entry_ids[:]
-    random.shuffle(shuffled)
-    for i, eid in enumerate(shuffled, start=1):
-        conn.execute("UPDATE entries SET start_order=? WHERE id=?", (i, eid))
-
-    # деление на группы по числу зон (группа = те, кто вместе кочует по зонам)
-    groups = [[] for _ in zones]
-    for i, eid in enumerate(shuffled):
-        groups[i % len(zones)].append(eid)
-
-    for p in range(1, periods_count + 1):
-        for gi, members in enumerate(groups):
-            zone = zones[(gi + p - 1) % len(zones)]
-            members = members[:]
-            random.shuffle(members)
-            for i, eid in enumerate(members):
-                half = ("1" if i % 2 == 0 else "2") if half_enabled else None
-                conn.execute(
-                    "INSERT INTO entry_zones (entry_id, period_number, zone, half_zone) VALUES (?,?,?,?) "
-                    "ON CONFLICT(entry_id, period_number) DO UPDATE SET zone=excluded.zone, "
-                    "half_zone=excluded.half_zone",
-                    (eid, p, zone, half),
-                )
+    by_team, solo = _draw_groups(conn, len(zones))
+    _assign_start_order(conn, entry_ids)
+    for p in range(1, t["periods_count"] + 1):
+        _write_round(conn, _draw_round(by_team, solo, zones), zones,
+                     bool(t["half_zones_enabled"]), "period_number", p)
     conn.commit()
     return len(entry_ids)
 
@@ -748,6 +785,11 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         year = _evsk_tournament_year(t["date_tour1"] if t else "")
         pairs = conn.execute("SELECT * FROM v_pair_results").fetchall()
         field_size = len(pairs)
+        # сколько спортсменов турнира имеют разряд не ниже II (правило 1
+        # «Иных условий» — условие присвоения I разряда)
+        field_ranked = sum(
+            1 for r in conn.execute("SELECT rank_category FROM athletes").fetchall()
+            if evsk.ladder_index(r["rank_category"]) >= evsk.ladder_index("2"))
 
         individuals = []
         for p in pairs:
@@ -764,6 +806,7 @@ class Handler(http.server.SimpleHTTPRequestHandler):
                     EVSK_STANDARDS, discipline_key="lodki", is_team=False, gender=gender,
                     tier_text=tier, competitor_count=field_size, place=p["pair_place"],
                     has_catch=has_catch, current_rank_label=m["rank_category"], age=age,
+                    field_ranked_count=field_ranked,
                 )
                 individuals.append({
                     "entry_id": p["entry_id"], "pair_name": p["entry_name"],
@@ -797,6 +840,7 @@ class Handler(http.server.SimpleHTTPRequestHandler):
                         tier_text=tier, competitor_count=len(team_rows), place=tf["final_place"],
                         has_catch=has_catch, current_rank_label=m["rank_category"], age=age,
                         individual_place=worst_pair_place, individual_field_size=field_size,
+                        field_ranked_count=field_ranked,
                     )
                     teams.append({
                         "entry_id": p["entry_id"], "team_id": tid, "team_name": tm["name"],
@@ -1221,7 +1265,10 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         year = _evsk_tournament_year(t["date_tour1"] if t else "")
         entries = self._forel_entries_query(conn)
         field_size = len(entries)
-        field_quality_ok = evsk.field_quality_ok_for_i_razryad([e["rank_category"] for e in entries])
+        # сколько участников имеют разряд не ниже II — для правила 1
+        # «Иных условий» (условие присвоения I разряда)
+        field_ranked = sum(1 for e in entries
+                           if evsk.ladder_index(e["rank_category"]) >= evsk.ladder_index("2"))
         final_rows = {f["entry_id"]: dict(f) for f in conn.execute("SELECT * FROM v_final_place").fetchall()}
 
         individuals = []
@@ -1235,7 +1282,7 @@ class Handler(http.server.SimpleHTTPRequestHandler):
                 EVSK_STANDARDS, discipline_key="forel", is_team=False, gender=gender,
                 tier_text=tier, competitor_count=field_size, place=final["final_place"],
                 has_catch=has_catch, current_rank_label=e["rank_category"], age=age,
-                field_quality_ok_for_i=field_quality_ok,
+                field_ranked_count=field_ranked,
             )
             individuals.append({
                 "entry_id": e["id"], "full_name": e["full_name"], "current_rank": e["rank_category"],
@@ -1266,7 +1313,7 @@ class Handler(http.server.SimpleHTTPRequestHandler):
                     has_catch=has_catch, current_rank_label=e["rank_category"], age=age,
                     individual_place=(own["final_place"] if own else None),
                     individual_field_size=field_size,
-                    field_quality_ok_for_i=field_quality_ok,
+                    field_ranked_count=field_ranked,
                 )
                 teams.append({
                     "entry_id": e["id"], "team_id": tid, "team_name": tm["name"],
@@ -1337,6 +1384,23 @@ class Handler(http.server.SimpleHTTPRequestHandler):
                 # назначаются позже, на вкладке «Жеребьёвка».
                 conn.commit()
                 return self._send_json({"ok": True, "id": entry_id})
+
+            if path.startswith("/api/forel/entries/") and path.endswith("/start_order"):
+                # ручная правка стартового номера (вкладка «Жеребьёвка»)
+                entry_id = int(path.split("/")[4])
+                raw = data.get("start_order")
+                if raw in (None, ""):
+                    value = None
+                else:
+                    try:
+                        value = int(raw)
+                    except (TypeError, ValueError):
+                        raise ApiError("стартовый номер должен быть целым числом")
+                    if value < 1:
+                        raise ApiError("стартовый номер должен быть больше нуля")
+                conn.execute("UPDATE entries SET start_order=? WHERE id=?", (value, entry_id))
+                conn.commit()
+                return self._send_json({"ok": True})
 
             if path.startswith("/api/forel/entries/") and path.endswith("/zone"):
                 entry_id = int(path.split("/")[4])
@@ -1569,7 +1633,10 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         year = _evsk_tournament_year(t["date_tour1"] if t else "")
         entries = self._zw_entries_query(conn)
         field_size = len(entries)
-        field_quality_ok = evsk.field_quality_ok_for_i_razryad([e["rank_category"] for e in entries])
+        # сколько участников имеют разряд не ниже II — для правила 1
+        # «Иных условий» (условие присвоения I разряда)
+        field_ranked = sum(1 for e in entries
+                           if evsk.ladder_index(e["rank_category"]) >= evsk.ladder_index("2"))
         final_rows = {f["entry_id"]: dict(f) for f in conn.execute("SELECT * FROM v_individual_final").fetchall()}
 
         individuals = []
@@ -1583,7 +1650,7 @@ class Handler(http.server.SimpleHTTPRequestHandler):
                 EVSK_STANDARDS, discipline_key=discipline_code, is_team=False, gender=gender,
                 tier_text=tier, competitor_count=field_size, place=final["final_place"],
                 has_catch=has_catch, current_rank_label=e["rank_category"], age=age,
-                field_quality_ok_for_i=field_quality_ok,
+                field_ranked_count=field_ranked,
             )
             individuals.append({
                 "entry_id": e["id"], "full_name": e["full_name"], "current_rank": e["rank_category"],
@@ -1613,7 +1680,7 @@ class Handler(http.server.SimpleHTTPRequestHandler):
                     tier_text=tier, competitor_count=len(team_rows), place=tf["final_place"],
                     has_catch=has_catch, current_rank_label=e["rank_category"], age=age,
                     individual_place=worst_place, individual_field_size=field_size,
-                    field_quality_ok_for_i=field_quality_ok,
+                    field_ranked_count=field_ranked,
                 )
                 teams.append({
                     "entry_id": e["id"], "team_id": tid, "team_name": tm["name"],
@@ -1687,6 +1754,23 @@ class Handler(http.server.SimpleHTTPRequestHandler):
                         )
                 conn.commit()
                 return self._send_json({"ok": True, "id": entry_id})
+
+            if path.startswith("/api/zw/entries/") and path.endswith("/start_order"):
+                # ручная правка стартового номера (вкладка «Жеребьёвка»)
+                entry_id = int(path.split("/")[4])
+                raw = data.get("start_order")
+                if raw in (None, ""):
+                    value = None
+                else:
+                    try:
+                        value = int(raw)
+                    except (TypeError, ValueError):
+                        raise ApiError("стартовый номер должен быть целым числом")
+                    if value < 1:
+                        raise ApiError("стартовый номер должен быть больше нуля")
+                conn.execute("UPDATE entries SET start_order=? WHERE id=?", (value, entry_id))
+                conn.commit()
+                return self._send_json({"ok": True})
 
             if path.startswith("/api/zw/entries/") and path.endswith("/zone"):
                 entry_id = int(path.split("/")[4])

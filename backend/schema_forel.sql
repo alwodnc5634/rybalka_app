@@ -23,13 +23,16 @@
 --     соревнования — фиксированное худшее место (число участников зоны + 3).
 --   - ИТОГОВОЕ место = сумма мест по периодам (ASC). Тай-брейки по порядку:
 --       1) сумма мест по периодам (меньше — лучше);
---       2) суммарная длина всех рыб (больше — лучше);
---       3) суммарное количество рыб (больше — лучше);
---       4) КОЛИЧЕСТВО РЫБ В ПОСЛЕДНЕМ ПЕРИОДЕ (больше — лучше), при равенстве
---          — в предпоследнем, и так далее назад до первого периода
---          (правило названо пользователем в v8);
---       5) если совпало вообще всё — жребия нет: группа делит среднее
+--       2) ПОСЛЕДНИЙ ПЕРИОД: больше баллов лучше, при равных баллах больше
+--          рыб лучше; при полном равенстве — предпоследний период, и так
+--          далее назад до первого;
+--       3) если совпало вообще всё — жребия нет: группа делит среднее
 --          арифметическое подряд идущих мест (двое на 5-6 → обоим 5.5).
+--     Проверено на реальном протоколе Чемпионата Вологодской области
+--     (37 участников, 11 групп с одинаковой суммой мест): это правило
+--     воспроизводит протокол в 10 группах из 11. Вариант «сначала общая
+--     сумма длины за всё соревнование» воспроизводит лишь 5 из 11 — он был
+--     в первой сборке v8 и признан неверным.
 --   - КОМАНДНЫЙ зачёт (v8, есть в реальном протоколе — листы «Команда» и
 --     «Командно-Личный», команды по 3 человека): баллы команды = СУММА мест
 --     всех её участников по всем периодам; место команды — по этой сумме
@@ -192,29 +195,43 @@ SELECT
     MAX(CASE WHEN period_number = 1 THEN fish_count END) AS fish_p1,
     MAX(CASE WHEN period_number = 2 THEN fish_count END) AS fish_p2,
     MAX(CASE WHEN period_number = 3 THEN fish_count END) AS fish_p3,
-    MAX(CASE WHEN period_number = 4 THEN fish_count END) AS fish_p4
+    MAX(CASE WHEN period_number = 4 THEN fish_count END) AS fish_p4,
+    MAX(CASE WHEN period_number = 1 THEN total_length END) AS len_p1,
+    MAX(CASE WHEN period_number = 2 THEN total_length END) AS len_p2,
+    MAX(CASE WHEN period_number = 3 THEN total_length END) AS len_p3,
+    MAX(CASE WHEN period_number = 4 THEN total_length END) AS len_p4
 FROM v_period_places
 GROUP BY entry_id;
 
 -- Итоговое личное место. Тай-брейки — см. шапку файла (п.1-5).
--- Периоды, которых нет в турнире, дают NULL -> COALESCE(-1) у всех одинаково
--- и на порядок не влияют.
+-- ВАЖНО (проверено на реальном протоколе Чемпионата Вологодской области,
+-- 37 участников, 11 групп с одинаковой суммой мест): при равной сумме мест
+-- сравнение идёт СРАЗУ ПО ПЕРИОДАМ, начиная с ПОСЛЕДНЕГО и далее назад
+-- (в каждом периоде: больше баллов лучше, при равных баллах больше рыб
+-- лучше). Общая сумма длины за всё соревнование в сравнении НЕ участвует —
+-- по ней порядок протокола не воспроизводится (совпадало лишь 5 групп из
+-- 11, тогда как по периодам с последнего — 10 из 11).
+-- Периоды, которых нет в турнире, дают NULL -> COALESCE(-1) у всех
+-- одинаково и на порядок не влияют.
 CREATE VIEW IF NOT EXISTS v_final_place AS
 WITH ranked AS (
     SELECT t.*,
         RANK() OVER (
-            ORDER BY t.sum_period_places ASC, t.sum_length DESC, t.sum_fish DESC,
-                     COALESCE(t.fish_p4, -1) DESC, COALESCE(t.fish_p3, -1) DESC,
-                     COALESCE(t.fish_p2, -1) DESC, COALESCE(t.fish_p1, -1) DESC
+            ORDER BY t.sum_period_places ASC,
+                     COALESCE(t.len_p4, -1) DESC, COALESCE(t.fish_p4, -1) DESC,
+                     COALESCE(t.len_p3, -1) DESC, COALESCE(t.fish_p3, -1) DESC,
+                     COALESCE(t.len_p2, -1) DESC, COALESCE(t.fish_p2, -1) DESC,
+                     COALESCE(t.len_p1, -1) DESC, COALESCE(t.fish_p1, -1) DESC
         ) AS rnk,
         COUNT(*) OVER (
-            PARTITION BY t.sum_period_places, t.sum_length, t.sum_fish,
-                         t.fish_p4, t.fish_p3, t.fish_p2, t.fish_p1
+            PARTITION BY t.sum_period_places,
+                         t.len_p4, t.fish_p4, t.len_p3, t.fish_p3,
+                         t.len_p2, t.fish_p2, t.len_p1, t.fish_p1
         ) AS tie_n
     FROM v_entry_totals t
 )
 SELECT entry_id, sum_period_places, sum_length, sum_fish, disqualified_ever,
-       fish_p1, fish_p2, fish_p3, fish_p4,
+       fish_p1, fish_p2, fish_p3, fish_p4, len_p1, len_p2, len_p3, len_p4,
        rnk + (tie_n - 1) / 2.0 AS final_place
 FROM ranked;
 
